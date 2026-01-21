@@ -1,0 +1,55 @@
+import dotenv from 'dotenv';
+import { z } from 'zod';
+
+// Load .env file
+dotenv.config();
+
+const envSchema = z.object({
+  // Database
+  DATABASE_URL: z.string().url(),
+
+  // Auth
+  JWT_SECRET: z.string().min(32),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
+  COOKIE_DOMAIN: z.string().default('localhost'),
+  COOKIE_SECURE: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('false'),
+
+  // Email
+  SMTP_HOST: z.string().default('localhost'),
+  SMTP_PORT: z.coerce.number().default(1025),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().email().default('noreply@emc3.local'),
+
+  // Google OAuth
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALLBACK_URL: z.string().url().optional(),
+
+  // App
+  NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+  PORT: z.coerce.number().default(3000),
+  FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  API_URL: z.string().url().default('http://localhost:3000'),
+
+  // Rate limiting
+  RATE_LIMIT_ENABLED: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('false'),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error('❌ Invalid environment variables:');
+  console.error(parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+export const env = parsed.data;
+

@@ -1,0 +1,429 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════════
+
+enum RoleName {
+  ADMIN
+  REVIEWER
+}
+
+enum ArticleStatus {
+  PUBLISHED
+  REMOVED
+}
+
+enum RevisionStatus {
+  REV_DRAFT
+  REV_IN_REVIEW
+  REV_CHANGES_REQUESTED
+  REV_APPROVED
+  REV_WITHDRAWN
+  REV_PUBLISHED
+}
+
+enum ReviewAction {
+  FEEDBACK
+  APPROVE
+}
+
+enum AppealStatus {
+  OPEN
+  CLOSED
+}
+
+// ═══════════════════════════════════════════════════════════
+// USERS
+// ═══════════════════════════════════════════════════════════
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique @db.Citext
+  username      String   @unique @db.Citext
+  passwordHash  String?  @map("password_hash")
+  emailVerified Boolean  @default(false) @map("email_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  profile               UserProfile?
+  roles                 UserRole[]
+  ban                   UserBan?
+  articles              Article[]
+  opinions              Opinion[]
+  opinionLikes          OpinionLike[]
+  opinionReplies        OpinionReply[]
+  articleLikes          ArticleLike[]
+  articleSaves          ArticleSave[]
+  following             Follow[]         @relation("follower")
+  followers             Follow[]         @relation("followed")
+  revisionReviews       RevisionReview[]
+  auditLogs             AuditLog[]
+  appeals               Appeal[]
+  appealMessages        AppealMessage[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens   PasswordResetToken[]
+  oauthAccounts         OAuthAccount[]
+  bannedUsers           UserBan[]        @relation("bannedBy")
+  unbannedUsers         UserBan[]        @relation("unbannedBy")
+
+  @@map("users")
+}
+
+model UserProfile {
+  userId      String   @id @map("user_id") @db.Uuid
+  displayName String?  @map("display_name")
+  about       String?
+  avatarUrl   String?  @map("avatar_url")
+  socialLinks Json     @default("{}") @map("social_links")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserRole {
+  userId    String   @map("user_id") @db.Uuid
+  role      RoleName
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, role])
+  @@map("user_roles")
+}
+
+model UserBan {
+  userId     String    @id @map("user_id") @db.Uuid
+  isBanned   Boolean   @default(false) @map("is_banned")
+  reason     String?
+  bannedById String?   @map("banned_by") @db.Uuid
+  bannedAt   DateTime? @map("banned_at")
+  unbannedById String? @map("unbanned_by") @db.Uuid
+  unbannedAt DateTime? @map("unbanned_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bannedBy   User? @relation("bannedBy", fields: [bannedById], references: [id], onDelete: SetNull)
+  unbannedBy User? @relation("unbannedBy", fields: [unbannedById], references: [id], onDelete: SetNull)
+
+  @@map("user_bans")
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTH TOKENS
+// ═══════════════════════════════════════════════════════════
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model OAuthAccount {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  provider        String
+  providerSubject String   @map("provider_subject")
+  email           String?  @db.Citext
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@map("oauth_accounts")
+}
+
+// ═══════════════════════════════════════════════════════════
+// ARTICLES & REVISIONS
+// ═══════════════════════════════════════════════════════════
+
+model Article {
+  id                  String        @id @default(uuid()) @db.Uuid
+  slug                String        @unique @db.Citext
+  authorId            String        @map("author_id") @db.Uuid
+  status              ArticleStatus @default(PUBLISHED)
+  createdAt           DateTime      @default(now()) @map("created_at")
+  firstPublishedAt    DateTime?     @map("first_published_at")
+  lastPublishedAt     DateTime?     @map("last_published_at")
+  publishedRevisionId String?       @map("published_revision_id") @db.Uuid
+  likeCount           Int           @default(0) @map("like_count")
+  saveCount           Int           @default(0) @map("save_count")
+  viewCount           BigInt        @default(0) @map("view_count")
+
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  revisions Revision[]
+  opinions  Opinion[]
+  likes     ArticleLike[]
+  saves     ArticleSave[]
+  views     ArticleView[]
+
+  @@index([authorId])
+  @@index([lastPublishedAt(sort: Desc)])
+  @@map("articles")
+}
+
+model Revision {
+  id              String         @id @default(uuid()) @db.Uuid
+  articleId       String         @map("article_id") @db.Uuid
+  title           String
+  summary         String
+  contentMarkdown String         @map("content_markdown")
+  bibliography    String?
+  status          RevisionStatus @default(REV_DRAFT)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  article    Article            @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reviews    RevisionReview[]
+  categories RevisionCategory[]
+
+  @@index([articleId])
+  @@index([status])
+  @@map("revisions")
+}
+
+model RevisionReview {
+  id           String       @id @default(uuid()) @db.Uuid
+  revisionId   String       @map("revision_id") @db.Uuid
+  reviewerId   String       @map("reviewer_id") @db.Uuid
+  action       ReviewAction
+  feedbackText String?      @map("feedback_text")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  revision Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  reviewer User     @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  @@index([revisionId])
+  @@map("revision_reviews")
+}
+
+// ═══════════════════════════════════════════════════════════
+// CATEGORIES
+// ═══════════════════════════════════════════════════════════
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique @db.Citext
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ancestors   CategoryClosure[] @relation("descendant")
+  descendants CategoryClosure[] @relation("ancestor")
+  revisions   RevisionCategory[]
+
+  @@map("categories")
+}
+
+model CategoryClosure {
+  ancestorId   String @map("ancestor_id") @db.Uuid
+  descendantId String @map("descendant_id") @db.Uuid
+  depth        Int
+
+  ancestor   Category @relation("ancestor", fields: [ancestorId], references: [id], onDelete: Cascade)
+  descendant Category @relation("descendant", fields: [descendantId], references: [id], onDelete: Cascade)
+
+  @@id([ancestorId, descendantId])
+  @@index([descendantId])
+  @@index([ancestorId, depth])
+  @@map("category_closure")
+}
+
+model RevisionCategory {
+  revisionId String @map("revision_id") @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+
+  revision Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, categoryId])
+  @@index([categoryId])
+  @@map("revision_categories")
+}
+
+// ═══════════════════════════════════════════════════════════
+// SOCIAL
+// ═══════════════════════════════════════════════════════════
+
+model ArticleLike {
+  userId    String   @map("user_id") @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("article_likes")
+}
+
+model ArticleSave {
+  userId    String   @map("user_id") @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("article_saves")
+}
+
+model ArticleView {
+  articleId    String   @map("article_id") @db.Uuid
+  viewerHash   String   @map("viewer_hash")
+  viewedOnDate DateTime @map("viewed_on_date") @db.Date
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, viewerHash, viewedOnDate])
+  @@index([articleId, viewedOnDate])
+  @@map("article_views")
+}
+
+model Follow {
+  followerId String   @map("follower_id") @db.Uuid
+  followedId String   @map("followed_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  follower User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followed User @relation("followed", fields: [followedId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followedId])
+  @@index([followedId])
+  @@map("follows")
+}
+
+// ═══════════════════════════════════════════════════════════
+// OPINIONS
+// ═══════════════════════════════════════════════════════════
+
+model Opinion {
+  id           String    @id @default(uuid()) @db.Uuid
+  articleId    String    @map("article_id") @db.Uuid
+  authorId     String    @map("author_id") @db.Uuid
+  bodyMarkdown String    @map("body_markdown")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  removedAt    DateTime? @map("removed_at")
+  likeCount    Int       @default(0) @map("like_count")
+
+  article Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  author  User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  likes   OpinionLike[]
+  reply   OpinionReply?
+
+  @@unique([articleId, authorId])
+  @@index([articleId])
+  @@index([removedAt])
+  @@map("opinions")
+}
+
+model OpinionLike {
+  userId    String   @map("user_id") @db.Uuid
+  opinionId String   @map("opinion_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opinion Opinion @relation(fields: [opinionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, opinionId])
+  @@map("opinion_likes")
+}
+
+model OpinionReply {
+  opinionId    String   @id @map("opinion_id") @db.Uuid
+  replierId    String   @map("replier_id") @db.Uuid
+  bodyMarkdown String   @map("body_markdown")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  opinion Opinion @relation(fields: [opinionId], references: [id], onDelete: Cascade)
+  replier User    @relation(fields: [replierId], references: [id], onDelete: Restrict)
+
+  @@map("opinion_replies")
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUDIT & APPEALS
+// ═══════════════════════════════════════════════════════════
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id") @db.Uuid
+  reason     String?
+  meta       Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+
+model Appeal {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  status    AppealStatus @default(OPEN)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AppealMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("appeals")
+}
+
+model AppealMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  appealId  String   @map("appeal_id") @db.Uuid
+  senderId  String?  @map("sender_id") @db.Uuid
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  appeal Appeal @relation(fields: [appealId], references: [id], onDelete: Cascade)
+  sender User?  @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([appealId, createdAt])
+  @@map("appeal_messages")
+}
+

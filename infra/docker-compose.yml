@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  # ═══════════════════════════════════════════════════════════
+  # PostgreSQL Database
+  # ═══════════════════════════════════════════════════════════
+  postgres:
+    image: postgres:15-alpine
+    container_name: emc3_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: emc3_dev
+      POSTGRES_USER: emc3_user
+      POSTGRES_PASSWORD: emc3_local_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emc3_user -d emc3_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - emc3_network
+
+  # ═══════════════════════════════════════════════════════════
+  # pgAdmin (Database GUI)
+  # ═══════════════════════════════════════════════════════════
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: emc3_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - emc3_network
+
+  # ═══════════════════════════════════════════════════════════
+  # Mailhog (Email Testing)
+  # ═══════════════════════════════════════════════════════════
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: emc3_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - emc3_network
+
+  # ═══════════════════════════════════════════════════════════
+  # Redis (Optional - for sessions/cache)
+  # ═══════════════════════════════════════════════════════════
+  redis:
+    image: redis:7-alpine
+    container_name: emc3_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - emc3_network
+
+volumes:
+  postgres_data:
+    name: emc3_postgres_data
+  pgadmin_data:
+    name: emc3_pgadmin_data
+  redis_data:
+    name: emc3_redis_data
+
+networks:
+  emc3_network:
+    name: emc3_network
+    driver: bridge

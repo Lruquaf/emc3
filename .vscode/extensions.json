@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "prisma.prisma",
+    "bradlc.vscode-tailwindcss",
+    "mikestead.dotenv",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}

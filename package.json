@@ -1,0 +1,57 @@
+{
+  "name": "emc3",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Epistemik Metayöntem Cemiyeti (e=mc³) - İlmî içerik platformu",
+  "keywords": [
+    "monorepo",
+    "typescript",
+    "react",
+    "express",
+    "prisma"
+  ],
+  "author": "EMC3 Team",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @emc3/api dev",
+    "dev:web": "pnpm --filter @emc3/web dev",
+    "build": "pnpm -r build",
+    "build:api": "pnpm --filter @emc3/api build",
+    "build:web": "pnpm --filter @emc3/web build",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @emc3/api db:generate",
+    "db:migrate": "pnpm --filter @emc3/api db:migrate",
+    "db:migrate:dev": "pnpm --filter @emc3/api db:migrate:dev",
+    "db:push": "pnpm --filter @emc3/api db:push",
+    "db:seed": "pnpm --filter @emc3/api db:seed",
+    "db:reset": "pnpm --filter @emc3/api db:reset",
+    "db:studio": "pnpm --filter @emc3/api db:studio",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "docker:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}
