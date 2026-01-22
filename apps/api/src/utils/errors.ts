@@ -43,5 +43,9 @@ export class AppError extends Error {
       retryAfterSeconds,
     });
   }
+
+  static internal(message = 'Internal server error') {
+    return new AppError(500, ERROR_CODES.INTERNAL_ERROR, message);
+  }
 }
 

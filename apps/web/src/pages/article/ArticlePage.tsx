@@ -5,6 +5,7 @@ import { ArticleContent } from '../../components/article/ArticleContent';
 import { ArticleMeta } from '../../components/article/ArticleMeta';
 import { ArticleActions } from '../../components/article/ArticleActions';
 import { BibliographySection } from '../../components/article/BibliographySection';
+import { OpinionSection } from '../../components/opinion';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay';
 
@@ -102,6 +103,12 @@ export function ArticlePage() {
             viewerInteraction={viewerInteraction}
           />
         </div>
+
+        {/* Opinions */}
+        <OpinionSection
+          articleId={article.id}
+          articleAuthorId={article.author.id}
+        />
       </div>
     </article>
   );

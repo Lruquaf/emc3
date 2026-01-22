@@ -3,6 +3,12 @@ import type { RevisionStatus } from '../types/article.js';
 // Re-export audit constants
 export * from './audit.js';
 
+// Re-export category constants
+export * from './category.js';
+
+// Re-export opinion constants
+export * from './opinion.js';
+
 /**
  * Revision status transitions
  */

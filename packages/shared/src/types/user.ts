@@ -24,6 +24,7 @@ export interface UserSessionDTO {
   emailVerified: boolean;
   roles: RoleName[];
   isBanned: boolean;
+  banReason: string | null;
   profile: {
     displayName: string | null;
     about: string | null;

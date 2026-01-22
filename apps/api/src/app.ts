@@ -14,6 +14,12 @@ import { articlesRouter } from './routes/articles.routes.js';
 import { revisionsRouter } from './routes/revisions.routes.js';
 import { meRouter } from './routes/me.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
+import { categoriesRouter } from './routes/categories.routes.js';
+import { socialRouter } from './routes/social.routes.js';
+import { followRouter } from './routes/follow.routes.js';
+import { feedRouter } from './routes/feed.routes.js';
+import { opinionRouter } from './routes/opinion.routes.js';
+import { appealRouter } from './routes/appeal.routes.js';
 
 export const app = express();
 
@@ -52,6 +58,14 @@ app.use('/api/v1/articles', articlesRouter);
 app.use('/api/v1/revisions', revisionsRouter);
 app.use('/api/v1/me', meRouter);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/categories', categoriesRouter);
+
+// Social features routes
+app.use('/api/v1', socialRouter);  // Like, Save endpoints
+app.use('/api/v1', followRouter);  // Follow endpoints
+app.use('/api/v1', feedRouter);    // Feed & Search endpoints
+app.use('/api/v1', opinionRouter); // Opinion endpoints
+app.use('/api/v1/appeals', appealRouter); // Appeal endpoints
 
 // ═══════════════════════════════════════════════════════════
 // Error Handling

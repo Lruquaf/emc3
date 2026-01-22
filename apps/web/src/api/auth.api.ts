@@ -17,6 +17,7 @@ export interface UserResponse {
   emailVerified: boolean;
   roles: string[];
   isBanned: boolean;
+  banReason: string | null;
   profile: {
     displayName: string | null;
     about: string | null;

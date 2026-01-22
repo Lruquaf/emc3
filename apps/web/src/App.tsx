@@ -23,7 +23,17 @@ import {
   AdminReviewsPage,
   AdminRevisionDetailPage,
   AdminPublishQueuePage,
+  AdminCategoriesPage,
+  AdminDashboardPage,
+  AdminUsersPage,
+  AdminArticlesPage,
+  AdminAuditPage,
+  AdminAppealsPage,
 } from './pages/admin';
+import { FeedPage } from './pages/FeedPage';
+import { FollowingFeedPage } from './pages/FollowingFeedPage';
+import { SavedPage } from './pages/SavedPage';
+import { AppealPage } from './pages/AppealPage';
 
 function App() {
   return (
@@ -32,6 +42,7 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/feed" element={<FeedPage />} />
           <Route path="/article/:slug" element={<ArticlePage />} />
 
           {/* Auth routes (guest only) */}
@@ -48,6 +59,9 @@ function App() {
           {/* Protected routes (must be logged in) */}
           <Route element={<AuthGuard />}>
             <Route path="/me/drafts" element={<MeDraftsPage />} />
+            <Route path="/me/saved" element={<SavedPage />} />
+            <Route path="/me/appeal" element={<AppealPage />} />
+            <Route path="/feed/following" element={<FollowingFeedPage />} />
             <Route path="/revision/:id/edit" element={<RevisionEditPage />} />
             
             {/* Routes that require verified email */}
@@ -63,6 +77,18 @@ function App() {
               <Route path="/admin/revisions/:id" element={<AdminRevisionDetailPage />} />
               {/* Publish queue - ADMIN only (handled by AdminLayout) */}
               <Route path="/admin/publish-queue" element={<AdminPublishQueuePage />} />
+            </Route>
+          </Route>
+
+          {/* Admin only routes */}
+          <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/articles" element={<AdminArticlesPage />} />
+              <Route path="/admin/audit" element={<AdminAuditPage />} />
+              <Route path="/admin/appeals" element={<AdminAppealsPage />} />
             </Route>
           </Route>
 

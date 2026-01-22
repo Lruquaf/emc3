@@ -28,6 +28,14 @@ export const AUDIT_ACTIONS = {
   
   // Opinion actions
   OPINION_REMOVED: 'OPINION_REMOVED',
+  
+  // Category actions (FAZ 4)
+  CATEGORY_DELETED_SUBTREE: 'CATEGORY_DELETED_SUBTREE',
+  
+  // Appeal actions (FAZ 7)
+  APPEAL_OPENED: 'APPEAL_OPENED',
+  APPEAL_MESSAGE: 'APPEAL_MESSAGE',
+  APPEAL_CLOSED: 'APPEAL_CLOSED',
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

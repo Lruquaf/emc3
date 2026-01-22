@@ -8,18 +8,21 @@ import {
   Shield,
   Home,
   LogOut,
+  LayoutDashboard,
+  MessageSquare,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 
 const adminNavItems = [
+  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/admin/users', icon: Users, label: 'Kullanıcılar' },
+  { to: '/admin/articles', icon: FileText, label: 'Makaleler' },
   { to: '/admin/reviews', icon: FileSearch, label: 'İnceleme Kuyruğu' },
   { to: '/admin/publish-queue', icon: CheckSquare, label: 'Yayın Kuyruğu', adminOnly: true },
-  // Future admin pages
-  // { to: '/admin/users', icon: Users, label: 'Kullanıcılar' },
-  // { to: '/admin/articles', icon: FileText, label: 'Makaleler' },
-  // { to: '/admin/categories', icon: FolderTree, label: 'Kategoriler', adminOnly: true },
-  // { to: '/admin/audit', icon: Shield, label: 'Audit Log' },
+  { to: '/admin/categories', icon: FolderTree, label: 'Kategoriler', adminOnly: true },
+  { to: '/admin/audit', icon: Shield, label: 'Audit Log' },
+  { to: '/admin/appeals', icon: MessageSquare, label: 'İtirazlar' },
 ];
 
 export function AdminLayout() {
@@ -52,6 +55,7 @@ export function AdminLayout() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.end}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
                     isActive

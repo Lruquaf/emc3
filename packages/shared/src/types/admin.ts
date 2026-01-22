@@ -1,4 +1,179 @@
-import type { RevisionStatus, CategoryDTO, AuthorDTO } from './article.js';
+import type { RevisionStatus, AuthorDTO } from './article.js';
+import type { CategoryDTO } from './category.js';
+import type { RoleName } from './user.js';
+
+// ═══════════════════════════════════════════════════════════
+// User Moderation DTOs
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Ban user request
+ */
+export interface BanUserRequest {
+  reason: string;
+}
+
+/**
+ * Ban/Unban response
+ */
+export interface BanUserResponse {
+  userId: string;
+  isBanned: boolean;
+  reason: string | null;
+  bannedAt: string | null;
+  bannedBy: string | null;
+}
+
+/**
+ * Role management request
+ */
+export interface UpdateRoleRequest {
+  role: RoleName;
+  action: 'grant' | 'revoke';
+}
+
+/**
+ * Role management response
+ */
+export interface UpdateRoleResponse {
+  userId: string;
+  roles: RoleName[];
+}
+
+/**
+ * Admin user list item
+ */
+export interface AdminUserDTO {
+  id: string;
+  email: string;
+  username: string;
+  emailVerified: boolean;
+  roles: RoleName[];
+  isBanned: boolean;
+  banReason: string | null;
+  bannedAt: string | null;
+  profile: {
+    displayName: string | null;
+    avatarUrl: string | null;
+  } | null;
+  stats: {
+    articleCount: number;
+    opinionCount: number;
+  };
+  createdAt: string;
+}
+
+/**
+ * Admin user list response
+ */
+export interface AdminUserListResponse {
+  items: AdminUserDTO[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+/**
+ * Admin user list params
+ */
+export interface AdminUserListParams {
+  query?: string;
+  role?: RoleName;
+  isBanned?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Article Moderation DTOs
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Article moderation request
+ */
+export interface RemoveArticleRequest {
+  reason: string;
+}
+
+/**
+ * Admin article list item
+ */
+export interface AdminArticleDTO {
+  id: string;
+  slug: string;
+  status: 'PUBLISHED' | 'REMOVED';
+  author: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    isBanned: boolean;
+  };
+  title: string;
+  summary: string;
+  publishedAt: string | null;
+  counts: {
+    likes: number;
+    saves: number;
+    views: number;
+    opinions: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Admin article list response
+ */
+export interface AdminArticleListResponse {
+  items: AdminArticleDTO[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+/**
+ * Admin article list params
+ */
+export interface AdminArticleListParams {
+  query?: string;
+  status?: 'PUBLISHED' | 'REMOVED';
+  authorId?: string;
+  page?: number;
+  limit?: number;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Dashboard Stats
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Dashboard stats
+ */
+export interface AdminDashboardStats {
+  users: {
+    total: number;
+    newThisWeek: number;
+    banned: number;
+  };
+  articles: {
+    total: number;
+    published: number;
+    removed: number;
+  };
+  reviews: {
+    pending: number;
+    approvedThisWeek: number;
+  };
+  appeals: {
+    open: number;
+  };
+}
 
 // ═══════════════════════════════════════════════════════════
 // Review Queue DTOs

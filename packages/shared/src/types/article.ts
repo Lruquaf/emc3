@@ -1,3 +1,5 @@
+import type { CategoryDTO } from './category.js';
+
 /**
  * Article status
  */
@@ -13,15 +15,6 @@ export type RevisionStatus =
   | 'REV_APPROVED'
   | 'REV_WITHDRAWN'
   | 'REV_PUBLISHED';
-
-/**
- * Category DTO
- */
-export interface CategoryDTO {
-  id: string;
-  name: string;
-  slug: string;
-}
 
 /**
  * Author DTO

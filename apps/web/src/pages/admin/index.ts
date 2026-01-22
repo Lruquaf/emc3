@@ -1,4 +1,9 @@
 export * from './AdminReviewsPage';
 export * from './AdminRevisionDetailPage';
 export * from './AdminPublishQueuePage';
-
+export * from './AdminCategoriesPage';
+export * from './AdminDashboardPage';
+export * from './AdminUsersPage';
+export * from './AdminArticlesPage';
+export * from './AdminAuditPage';
+export * from './AdminAppealsPage';

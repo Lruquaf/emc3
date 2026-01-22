@@ -1,14 +1,31 @@
 import { Router } from 'express';
 
 import * as adminController from '../controllers/admin.controller.js';
+import * as categoriesController from '../controllers/categories.controller.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
-import { requireRole, requireAdmin, requireReviewer } from '../middlewares/requireRole.js';
+import { requireAdmin, requireReviewer } from '../middlewares/requireRole.js';
 import { validate, validateParams, validateQuery } from '../middlewares/validate.js';
 import {
   reviewQueueQuerySchema,
   publishQueueQuerySchema,
   revisionIdParamSchema,
   feedbackSchema,
+  createCategorySchema,
+  updateCategorySchema,
+  reparentCategorySchema,
+  categoryIdParamSchema,
+  adminUserListQuerySchema,
+  adminArticleListQuerySchema,
+  banUserSchema,
+  updateRoleSchema,
+  removeArticleSchema,
+  auditLogListQuerySchema,
+  appealListQuerySchema,
+  appealMessageSchema,
+  closeAppealSchema,
+  userIdParamSchema,
+  appealIdParamSchema,
+  articleIdParamSchema,
 } from '@emc3/shared';
 
 export const adminRouter = Router();
@@ -16,11 +33,115 @@ export const adminRouter = Router();
 // All admin routes require authentication
 adminRouter.use(requireAuth);
 
-// ═══════════════════════════════════════════════════════════
-// Review Queue (REVIEWER or ADMIN)
-// ═══════════════════════════════════════════════════════════
+// Dashboard (REVIEWER or ADMIN)
+adminRouter.get(
+  '/dashboard/stats',
+  requireReviewer,
+  adminController.getDashboardStats
+);
 
-// Get review queue
+// User Management (REVIEWER or ADMIN)
+adminRouter.get(
+  '/users',
+  requireReviewer,
+  validateQuery(adminUserListQuerySchema),
+  adminController.listUsers
+);
+
+adminRouter.get(
+  '/users/:id',
+  requireReviewer,
+  validateParams(userIdParamSchema),
+  adminController.getUserDetail
+);
+
+adminRouter.post(
+  '/users/:id/ban',
+  requireReviewer,
+  validateParams(userIdParamSchema),
+  validate(banUserSchema),
+  adminController.banUser
+);
+
+adminRouter.post(
+  '/users/:id/unban',
+  requireReviewer,
+  validateParams(userIdParamSchema),
+  adminController.unbanUser
+);
+
+// Role management (ADMIN only)
+adminRouter.post(
+  '/users/:id/role',
+  requireAdmin,
+  validateParams(userIdParamSchema),
+  validate(updateRoleSchema),
+  adminController.updateUserRole
+);
+
+// Article Moderation (REVIEWER or ADMIN)
+adminRouter.get(
+  '/articles',
+  requireReviewer,
+  validateQuery(adminArticleListQuerySchema),
+  adminController.listArticles
+);
+
+adminRouter.post(
+  '/articles/:id/remove',
+  requireReviewer,
+  validateParams(articleIdParamSchema),
+  validate(removeArticleSchema),
+  adminController.removeArticle
+);
+
+adminRouter.post(
+  '/articles/:id/restore',
+  requireReviewer,
+  validateParams(articleIdParamSchema),
+  adminController.restoreArticle
+);
+
+// Audit Logs (REVIEWER or ADMIN)
+adminRouter.get(
+  '/audit',
+  requireReviewer,
+  validateQuery(auditLogListQuerySchema),
+  adminController.getAuditLogs
+);
+
+// Appeals (REVIEWER or ADMIN)
+adminRouter.get(
+  '/appeals',
+  requireReviewer,
+  validateQuery(appealListQuerySchema),
+  adminController.listAppeals
+);
+
+adminRouter.get(
+  '/appeals/:id',
+  requireReviewer,
+  validateParams(appealIdParamSchema),
+  adminController.getAppealDetail
+);
+
+adminRouter.post(
+  '/appeals/:id/message',
+  requireReviewer,
+  validateParams(appealIdParamSchema),
+  validate(appealMessageSchema),
+  adminController.sendAppealMessage
+);
+
+adminRouter.post(
+  '/appeals/:id/close',
+  requireReviewer,
+  validateParams(appealIdParamSchema),
+  validate(closeAppealSchema),
+  adminController.closeAppeal
+);
+
+// Review Queue (REVIEWER or ADMIN)
 adminRouter.get(
   '/reviews',
   requireReviewer,
@@ -28,7 +149,6 @@ adminRouter.get(
   adminController.getReviewQueue
 );
 
-// Get revision detail for review
 adminRouter.get(
   '/revisions/:id',
   requireReviewer,
@@ -36,7 +156,6 @@ adminRouter.get(
   adminController.getRevisionDetail
 );
 
-// Give feedback (changes requested)
 adminRouter.post(
   '/revisions/:id/feedback',
   requireReviewer,
@@ -45,7 +164,6 @@ adminRouter.post(
   adminController.giveFeedback
 );
 
-// Approve revision
 adminRouter.post(
   '/revisions/:id/approve',
   requireReviewer,
@@ -53,11 +171,7 @@ adminRouter.post(
   adminController.approveRevision
 );
 
-// ═══════════════════════════════════════════════════════════
 // Publish Queue (ADMIN only)
-// ═══════════════════════════════════════════════════════════
-
-// Get publish queue
 adminRouter.get(
   '/publish-queue',
   requireAdmin,
@@ -65,7 +179,6 @@ adminRouter.get(
   adminController.getPublishQueue
 );
 
-// Publish revision
 adminRouter.post(
   '/revisions/:id/publish',
   requireAdmin,
@@ -73,3 +186,39 @@ adminRouter.post(
   adminController.publishRevision
 );
 
+// Category Admin Routes (ADMIN only)
+adminRouter.get(
+  '/categories',
+  requireAdmin,
+  categoriesController.getAdminCategories
+);
+
+adminRouter.post(
+  '/categories',
+  requireAdmin,
+  validate(createCategorySchema),
+  categoriesController.createCategory
+);
+
+adminRouter.put(
+  '/categories/:id',
+  requireAdmin,
+  validateParams(categoryIdParamSchema),
+  validate(updateCategorySchema),
+  categoriesController.updateCategory
+);
+
+adminRouter.put(
+  '/categories/:id/parent',
+  requireAdmin,
+  validateParams(categoryIdParamSchema),
+  validate(reparentCategorySchema),
+  categoriesController.reparentCategory
+);
+
+adminRouter.delete(
+  '/categories/:id',
+  requireAdmin,
+  validateParams(categoryIdParamSchema),
+  categoriesController.deleteCategory
+);

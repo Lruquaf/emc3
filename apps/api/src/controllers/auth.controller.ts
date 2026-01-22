@@ -89,6 +89,7 @@ export const login: RequestHandler = async (req, res, next) => {
         emailVerified: user.emailVerified,
         roles: user.roles.map((r) => r.role),
         isBanned: user.ban?.isBanned ?? false,
+        banReason: user.ban?.reason ?? null,
         profile: user.profile,
       },
     });
@@ -255,6 +256,7 @@ export const getMe: RequestHandler = async (req, res, next) => {
       emailVerified: user.emailVerified,
       roles: user.roles.map((r) => r.role),
       isBanned: user.ban?.isBanned ?? false,
+      banReason: user.ban?.reason ?? null,
       profile: {
         displayName: user.profile?.displayName ?? null,
         about: user.profile?.about ?? null,

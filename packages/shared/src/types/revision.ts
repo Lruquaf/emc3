@@ -1,4 +1,5 @@
-import type { RevisionStatus, CategoryDTO } from './article.js';
+import type { RevisionStatus } from './article.js';
+import type { CategoryDTO } from './category.js';
 
 /**
  * Review feedback info

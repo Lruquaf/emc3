@@ -399,11 +399,12 @@ model AuditLog {
 }
 
 model Appeal {
-  id        String       @id @default(uuid()) @db.Uuid
-  userId    String       @map("user_id") @db.Uuid
-  status    AppealStatus @default(OPEN)
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @map("user_id") @db.Uuid
+  status     AppealStatus @default(OPEN)
+  resolution String?      // 'upheld' | 'overturned' when closed
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages AppealMessage[]
