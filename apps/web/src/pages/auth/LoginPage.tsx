@@ -61,14 +61,14 @@ export function LoginPage() {
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-600">{successMessage}</p>
+          <div className="mb-4 p-4 bg-success-50 border border-success-100 rounded-lg">
+            <p className="text-sm text-success">{successMessage}</p>
           </div>
         )}
 
         {/* Error Messages */}
         {(error || oauthError) && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-4 p-4 bg-danger-50 border border-danger-100 rounded-lg">
             <p className="text-sm text-danger">
               {oauthError === 'oauth_failed'
                 ? 'Google ile giriş yapılamadı. Lütfen tekrar deneyin.'

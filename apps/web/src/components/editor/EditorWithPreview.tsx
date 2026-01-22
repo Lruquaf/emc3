@@ -60,8 +60,8 @@ export function EditorWithPreview({
           onClick={() => setViewMode('edit')}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
             viewMode === 'edit'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+              ? 'bg-accent text-white'
+              : 'bg-surface-subtle text-text-secondary hover:bg-border-light'
           }`}
         >
           <Edit3 size={14} />
@@ -72,8 +72,8 @@ export function EditorWithPreview({
           onClick={() => setViewMode('split')}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
             viewMode === 'split'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+              ? 'bg-accent text-white'
+              : 'bg-surface-subtle text-text-secondary hover:bg-border-light'
           }`}
         >
           <Columns size={14} />
@@ -84,8 +84,8 @@ export function EditorWithPreview({
           onClick={() => setViewMode('preview')}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
             viewMode === 'preview'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+              ? 'bg-accent text-white'
+              : 'bg-surface-subtle text-text-secondary hover:bg-border-light'
           }`}
         >
           <Eye size={14} />
@@ -117,8 +117,8 @@ export function EditorWithPreview({
 
         {/* Preview */}
         {viewMode !== 'edit' && (
-          <div className="rounded-lg border border-neutral-300 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-text-muted">
               Önizleme
             </div>
             <MarkdownPreview content={value} />

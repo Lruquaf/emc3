@@ -31,80 +31,115 @@ export function FeedbackModal({ revision, onClose, onSuccess }: FeedbackModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-lg bg-surface p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl rounded-xl bg-surface shadow-2xl border border-border">
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-bold">
-            <AlertTriangle className="text-warn" size={20} />
-            Düzenleme Talebi
-          </h2>
+        <div className="border-b border-divider px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warn-50">
+                <AlertTriangle className="text-warn" size={24} />
+              </div>
+              <div>
+                <h2 className="font-serif text-xl font-bold text-text">Düzenleme Talebi</h2>
+                <p className="text-xs text-text-muted">Yazara geri bildirim gönderin</p>
+              </div>
+            </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-muted hover:bg-bg hover:text-text"
+              className="rounded-lg p-2 text-text-muted transition-colors hover:bg-bg-secondary hover:text-text"
           >
             <X size={20} />
           </button>
         </div>
-
-        {/* Info */}
-        <div className="mb-4 rounded-lg bg-warn/10 p-3">
-          <p className="text-sm text-warn">
-            Bu işlem revision'ı <strong>CHANGES_REQUESTED</strong> durumuna
-            geçirecek ve yazara düzenleme yapması için bildirim gönderecek.
-          </p>
         </div>
 
-        <p className="mb-4 text-sm text-muted">
-          Makale: <strong>{revision.title}</strong>
-        </p>
+        <div className="px-6 py-5">
+          {/* Info Alert */}
+          <div className="mb-5 rounded-lg border border-warn-100 bg-warn-50 p-4">
+            <div className="flex gap-3">
+              <AlertTriangle className="mt-0.5 shrink-0 text-warn" size={18} />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-warn-dark">
+                  Önemli Bilgi
+                </p>
+                <p className="mt-1 text-xs text-warn-dark/80">
+                  Bu işlem revision'ı <strong>CHANGES_REQUESTED</strong> durumuna
+                  geçirecek ve yazara düzenleme yapması için bildirim gönderecektir.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Revision Info */}
+          <div className="mb-5 rounded-lg border border-border bg-surface-elevated p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-text-muted mb-1">
+              Makale
+            </p>
+            <p className="font-medium text-text">{revision.title}</p>
+          </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="mb-2 block text-sm font-medium">
-              Geri Bildirim <span className="text-danger">*</span>
+            <div className="mb-5">
+              <label className="mb-2 block text-sm font-medium text-text">
+                Geri Bildirim Metni <span className="text-danger">*</span>
             </label>
             <textarea
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
-              placeholder="Yazara iletmek istediğiniz düzenleme taleplerini yazın..."
-              rows={6}
-              className="w-full resize-none rounded-lg border border-border bg-bg px-4 py-3 text-sm placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="Yazara iletmek istediğiniz düzenleme taleplerini detaylı olarak yazın. Hangi bölümlerin değiştirilmesi gerektiğini, ne tür düzenlemeler istediğinizi belirtin..."
+                rows={8}
+                className="w-full resize-none rounded-lg border border-border bg-bg px-4 py-3 text-sm leading-relaxed placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
               required
               minLength={10}
+                maxLength={5000}
             />
-            <p className="mt-1 text-xs text-muted">
-              En az 10 karakter ({feedbackText.length}/5000)
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-xs text-text-muted">
+                  En az 10 karakter gerekli. Açıklayıcı ve yapıcı geri bildirim yazın.
+                </p>
+                <p className={`text-xs font-medium ${
+                  feedbackText.length < 10 
+                    ? 'text-text-muted' 
+                    : feedbackText.length > 4500
+                    ? 'text-danger'
+                    : 'text-text-secondary'
+                }`}>
+                  {feedbackText.length}/5000
             </p>
+              </div>
           </div>
 
           {/* Error */}
           {feedbackMutation.error && (
-            <div className="mb-4 rounded-lg bg-danger/10 p-3 text-sm text-danger">
+              <div className="mb-5 rounded-lg border border-danger-100 bg-danger-50 p-4">
+                <p className="text-sm font-medium text-danger">
               Bir hata oluştu. Lütfen tekrar deneyin.
+                </p>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 border-t border-divider pt-5">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm text-muted hover:text-text"
+                className="rounded-lg px-5 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text"
             >
               İptal
             </button>
             <button
               type="submit"
               disabled={feedbackText.trim().length < 10 || feedbackMutation.isPending}
-              className="flex items-center gap-2 rounded-lg bg-warn px-4 py-2 text-sm text-white hover:bg-warn/90 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-warn px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-warn-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={16} />
               {feedbackMutation.isPending ? 'Gönderiliyor...' : 'Geri Bildirim Gönder'}
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

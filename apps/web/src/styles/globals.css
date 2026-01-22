@@ -6,40 +6,126 @@
    Design Tokens (CSS Variables)
    ═══════════════════════════════════════════════════════════ */
 :root {
-  /* Backgrounds */
-  --bg: #fbf7ef;
-  --surface: #ffffff;
+  /* ═══════════════════════════════════════════════════════════
+     Backgrounds - Katmanlı yapı
+     ═══════════════════════════════════════════════════════════ */
+  --bg: #fbf7ef; /* Base background - krem/bej parşömen tonu */
+  --bg-secondary: #f8f5ed; /* Hafif vurgulu background */
+  --surface: #ffffff; /* Kartlar, modal'lar için */
+  --surface-elevated: #fefefe; /* Hover states, raised cards */
+  --surface-subtle: #f5f2e8; /* Subtle backgrounds */
 
-  /* Text */
-  --text: #111827;
-  --muted: #6b7280;
+  /* ═══════════════════════════════════════════════════════════
+     Text - Hiyerarşik yapı
+     ═══════════════════════════════════════════════════════════ */
+  --text: #1a1a1a; /* Primary text - yumuşak siyah */
+  --text-secondary: #4a4a4a; /* Secondary text */
+  --text-muted: #6b6b6b; /* Muted text */
+  --text-disabled: #a0a0a0; /* Disabled text */
 
-  /* Borders */
-  --border: #e5e7eb;
+  /* ═══════════════════════════════════════════════════════════
+     Borders & Dividers
+     ═══════════════════════════════════════════════════════════ */
+  --border: #e0ddd4; /* Primary border */
+  --border-light: #f0ede5; /* Light border */
+  --border-strong: #c4c1b8; /* Strong border */
+  --divider: #e8e5dd; /* Divider lines */
 
-  /* Accents */
-  --accent: #0f3d2e;
-  --accent-2: #0b2a4a;
-  --gold: #b08d57;
+  /* ═══════════════════════════════════════════════════════════
+     Primary Accent - Yeşil Tonları
+     ═══════════════════════════════════════════════════════════ */
+  --accent: #0f3d2e; /* Primary accent - mevcut yeşil */
+  --accent-dark: #0a2a1f; /* Darker shade */
+  --accent-light: #1a5d47; /* Lighter shade */
+  --accent-lighter: #2d7a5f; /* Even lighter */
+  --accent-50: #e8f5f0; /* Light background tint */
+  --accent-100: #c9e6d9; /* Subtle background */
+  --accent-500: #0f3d2e; /* Base */
+  --accent-600: #0a2a1f; /* Hover states */
+  --accent-700: #081f17; /* Active/pressed */
 
-  /* Semantic */
-  --danger: #8b1e1e;
-  --warn: #8a6a1f;
-  --success: #166534;
+  /* ═══════════════════════════════════════════════════════════
+     Gold - Altın Tonları (Daha görünür)
+     ═══════════════════════════════════════════════════════════ */
+  --gold: #b8860b; /* Primary gold - daha canlı */
+  --gold-dark: #996f09; /* Darker gold */
+  --gold-light: #d4a017; /* Lighter gold */
+  --gold-lighter: #e6b82e; /* Even lighter */
+  --gold-50: #fef9e7; /* Light background tint */
+  --gold-100: #fef3c7; /* Subtle background */
+  --gold-500: #b8860b; /* Base */
+  --gold-600: #996f09; /* Hover states */
+  --gold-700: #7a5807; /* Active/pressed */
+
+  /* ═══════════════════════════════════════════════════════════
+     Secondary Accent - Lacivert (İlmî derinlik)
+     ═══════════════════════════════════════════════════════════ */
+  --accent-2: #1e3a5f; /* Secondary accent - lacivert */
+  --accent-2-dark: #152a47; /* Darker shade */
+  --accent-2-light: #2d5080; /* Lighter shade */
+  --accent-2-50: #e8edf5; /* Light background tint */
+  --accent-2-100: #d1dceb; /* Subtle background */
+
+  /* ═══════════════════════════════════════════════════════════
+     Semantic Colors - Yumuşak ve okunabilir
+     ═══════════════════════════════════════════════════════════ */
+  /* Success - Yeşil tonları (accent ile uyumlu) */
+  --success: #1a6b47; /* Primary success */
+  --success-light: #208b5a; /* Light success */
+  --success-dark: #145034; /* Dark success */
+  --success-50: #e8f5ee; /* Light background */
+  --success-100: #c9e6d6; /* Subtle background */
+
+  /* Warning - Altın/Amber tonları */
+  --warn: #b8860b; /* Gold ile uyumlu */
+  --warn-light: #d4a017; /* Light warning */
+  --warn-dark: #996f09; /* Dark warning */
+  --warn-50: #fef9e7; /* Light background */
+  --warn-100: #fef3c7; /* Subtle background */
+
+  /* Danger - Koyu kırmızı/kahverengi (gözü yormayan) */
+  --danger: #8b4513; /* Saddle brown - yumuşak kırmızı-kahve */
+  --danger-light: #a0522d; /* Sienna - lighter */
+  --danger-dark: #6b3410; /* Darker */
+  --danger-50: #f9f2ec; /* Light background */
+  --danger-100: #f0e4d8; /* Subtle background */
+
+  /* Info - Mavi tonları (subtle) */
+  --info: #2c5282; /* Info blue */
+  --info-light: #3182ce; /* Light info */
+  --info-dark: #2c5282; /* Dark info */
+  --info-50: #e8f0f7; /* Light background */
+  --info-100: #d1e2ef; /* Subtle background */
 }
 
 /* ═══════════════════════════════════════════════════════════
    Base Styles
    ═══════════════════════════════════════════════════════════ */
 html {
-  font-family: 'Inter', system-ui, sans-serif;
+  /* Sistem fontları - Arapça karakterler için fallback */
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    'Oxygen',
+    'Ubuntu',
+    'Cantarell',
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
   background-color: var(--bg);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   min-height: 100vh;
-  line-height: 1.6;
+  line-height: 1.7; /* Gövde metni için daha rahat okuma */
+  font-size: 1rem;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -51,9 +137,93 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: Georgia, Cambria, 'Times New Roman', serif;
+  /* Serif fontlar - Arapça karakterler için sistem fallback */
+  font-family:
+    Georgia,
+    'Apple Garamond',
+    'Baskerville',
+    Cambria,
+    'Times New Roman',
+    'Times',
+    'Liberation Serif',
+    serif;
   font-weight: 600;
+  line-height: 1.25; /* Başlıklar için sıkı satır aralığı */
+  color: var(--text);
+}
+
+/* Başlık boyutları */
+h1 {
+  font-size: 2.5rem; /* 40px */
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 2rem; /* 32px */
+  line-height: 1.25;
+  margin-bottom: 0.875rem;
+}
+
+h3 {
+  font-size: 1.75rem; /* 28px */
   line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+h4 {
+  font-size: 1.5rem; /* 24px */
+  line-height: 1.35;
+  margin-bottom: 0.625rem;
+}
+
+h5 {
+  font-size: 1.25rem; /* 20px */
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+h6 {
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.45;
+  margin-bottom: 0.5rem;
+}
+
+/* Arapça metinler için özel stil */
+.arabic-text,
+[dir='rtl'] {
+  font-family:
+    'Segoe UI',
+    'Tahoma',
+    'Arial Unicode MS',
+    'DejaVu Sans',
+    sans-serif;
+  line-height: 2; /* Arapça metinler için daha geniş satır aralığı */
+  text-align: right;
+}
+
+/* Paragraf ve gövde metni */
+p {
+  margin-bottom: 1.25rem;
+  line-height: 1.8; /* Uzun okuma için rahat satır aralığı */
+}
+
+/* Link stilleri */
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent-light);
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* ═══════════════════════════════════════════════════════════

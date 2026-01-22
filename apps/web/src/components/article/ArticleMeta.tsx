@@ -25,11 +25,11 @@ export function ArticleMeta({
     : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
+    <div className="flex flex-wrap items-center gap-4 text-sm text-text-muted">
       {/* Author */}
       <Link
         to={`/u/${author.username}`}
-        className="flex items-center gap-2 transition-colors hover:text-neutral-700 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 transition-colors hover:text-text"
       >
         {author.avatarUrl ? (
           <img
@@ -38,7 +38,7 @@ export function ArticleMeta({
             className="h-8 w-8 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-50 text-accent-600">
             <User size={16} />
           </div>
         )}
@@ -57,7 +57,7 @@ export function ArticleMeta({
 
       {/* Updated badge */}
       {isUpdated && (
-        <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+        <div className="flex items-center gap-1.5 text-gold-600">
           <RefreshCw size={14} />
           <span>Güncellendi</span>
         </div>
@@ -65,7 +65,7 @@ export function ArticleMeta({
 
       {/* Pending update badge */}
       {hasPendingUpdate && (
-        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+        <span className="rounded-full bg-gold-50 px-2.5 py-1 text-xs font-medium text-gold-700">
           Güncelleme Bekliyor
         </span>
       )}
@@ -77,7 +77,7 @@ export function ArticleMeta({
             <Link
               key={category.id}
               to={`/?category=${category.slug}`}
-              className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+              className="rounded-full bg-surface-subtle px-3 py-1 text-xs font-medium transition-colors hover:bg-border-light"
             >
               {category.name}
             </Link>

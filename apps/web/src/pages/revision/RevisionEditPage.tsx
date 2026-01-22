@@ -135,12 +135,12 @@ export function RevisionEditPage() {
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-3">
-              <h1 className="font-serif text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+              <h1               className="font-serif text-2xl font-bold text-text">
                 Düzenle
               </h1>
               <RevisionStatus status={revision.status as RevisionStatusType} />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-text-muted">
               /{revision.articleSlug}
             </p>
           </div>
@@ -150,7 +150,7 @@ export function RevisionEditPage() {
               <button
                 onClick={handleDelete}
                 disabled={deleteRevision.isPending}
-                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20"
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-50"
               >
                 <Trash2 size={16} />
                 Sil
@@ -161,7 +161,7 @@ export function RevisionEditPage() {
               <button
                 onClick={handleWithdraw}
                 disabled={withdrawRevision.isPending}
-                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-gold transition-colors hover:bg-gold-50"
               >
                 <Undo size={16} />
                 Geri Çek
@@ -172,11 +172,11 @@ export function RevisionEditPage() {
 
         {/* Feedback Alert */}
         {revision.lastReviewFeedback && revision.status === 'REV_CHANGES_REQUESTED' && (
-          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-            <h3 className="mb-2 font-medium text-amber-800 dark:text-amber-300">
+          <div className="mb-6 rounded-xl border border-gold-100 bg-gold-50 p-4">
+            <h3 className="mb-2 font-medium text-gold-dark">
               Geri Bildirim ({revision.lastReviewFeedback.reviewerUsername})
             </h3>
-            <p className="text-sm text-amber-700 dark:text-amber-400">
+            <p className="text-sm text-gold-600">
               {revision.lastReviewFeedback.feedbackText}
             </p>
           </div>
@@ -185,7 +185,7 @@ export function RevisionEditPage() {
         <form className="space-y-6">
           {/* Title */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <label className="mb-2 block text-sm font-medium text-text-secondary">
               Başlık
             </label>
             <input
@@ -193,13 +193,13 @@ export function RevisionEditPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={!isEditable}
-              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-lg font-medium text-neutral-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-neutral-100 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:disabled:bg-neutral-900"
+              className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-lg font-medium text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:bg-surface-subtle disabled:opacity-60"
             />
           </div>
 
           {/* Summary */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <label className="mb-2 block text-sm font-medium text-text-secondary">
               Özet
             </label>
             <textarea
@@ -207,13 +207,13 @@ export function RevisionEditPage() {
               onChange={(e) => setSummary(e.target.value)}
               disabled={!isEditable}
               rows={3}
-              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-neutral-100 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:disabled:bg-neutral-900"
+              className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:bg-surface-subtle disabled:opacity-60"
             />
           </div>
 
           {/* Categories */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <label className="mb-2 block text-sm font-medium text-text-secondary">
               Kategoriler
             </label>
             <div className="flex flex-wrap gap-2">
@@ -226,7 +226,7 @@ export function RevisionEditPage() {
                   className={`rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
                     selectedCategories.includes(category.id)
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 disabled:hover:bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-300'
+                      : 'bg-surface-subtle text-text-secondary hover:bg-border-light disabled:hover:bg-surface-subtle'
                   }`}
                 >
                   {category.name}
@@ -237,7 +237,7 @@ export function RevisionEditPage() {
 
           {/* Content */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <label className="mb-2 block text-sm font-medium text-text-secondary">
               İçerik
             </label>
             <EditorWithPreview
@@ -249,7 +249,7 @@ export function RevisionEditPage() {
 
           {/* Bibliography */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <label className="mb-2 block text-sm font-medium text-text-secondary">
               Kaynakça
             </label>
             <textarea
@@ -257,17 +257,17 @@ export function RevisionEditPage() {
               onChange={(e) => setBibliography(e.target.value)}
               disabled={!isEditable}
               rows={5}
-              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 font-mono text-sm text-neutral-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-neutral-100 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:disabled:bg-neutral-900"
+              className="w-full rounded-lg border border-border bg-surface px-4 py-3 font-mono text-sm text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:bg-surface-subtle disabled:opacity-60"
             />
           </div>
 
           {/* Actions */}
           {isEditable && (
-            <div className="flex items-center justify-end gap-4 border-t border-neutral-200 pt-6 dark:border-neutral-700">
+            <div className="flex items-center justify-end gap-4 border-t border-divider pt-6">
               <button
                 type="button"
                 onClick={() => navigate('/me/drafts')}
-                className="rounded-lg px-6 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="rounded-lg px-6 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-subtle"
               >
                 İptal
               </button>
@@ -276,7 +276,7 @@ export function RevisionEditPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={!hasChanges || !isValid || updateRevision.isPending}
-                className="flex items-center gap-2 rounded-lg border border-emerald-600 px-6 py-2.5 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                className="flex items-center gap-2 rounded-lg border border-accent px-6 py-2.5 text-sm font-medium text-accent transition-colors hover:bg-accent-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {updateRevision.isPending ? (
                   <LoadingSpinner size="sm" />
@@ -291,7 +291,7 @@ export function RevisionEditPage() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={!isValid || submitRevision.isPending}
-                  className="flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-lg bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitRevision.isPending ? (
                     <LoadingSpinner size="sm" />

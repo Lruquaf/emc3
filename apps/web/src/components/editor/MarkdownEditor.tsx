@@ -34,13 +34,11 @@ export const MarkdownEditor = forwardRef<HTMLTextAreaElement, MarkdownEditorProp
         maxRows={maxRows}
         disabled={disabled}
         className={`
-          w-full resize-none rounded-lg border border-neutral-300 bg-white
-          px-4 py-3 font-mono text-sm text-neutral-900
-          placeholder:text-neutral-400
-          focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500
-          disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:opacity-50
-          dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100
-          dark:placeholder:text-neutral-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-400
+          w-full resize-none rounded-lg border border-border bg-surface
+          px-4 py-3 font-mono text-sm text-text
+          placeholder:text-text-muted
+          focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent
+          disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:opacity-50
           ${className}
         `}
       />

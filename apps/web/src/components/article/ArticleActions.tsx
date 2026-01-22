@@ -58,9 +58,7 @@ export function ArticleActions({
       <button
         onClick={handleLike}
         className={`flex items-center gap-2 transition-colors ${
-          liked
-            ? 'text-rose-500'
-            : 'text-neutral-500 hover:text-rose-500 dark:text-neutral-400'
+          liked ? 'text-danger' : 'text-text-muted hover:text-danger'
         }`}
       >
         <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
@@ -71,9 +69,7 @@ export function ArticleActions({
       <button
         onClick={handleSave}
         className={`flex items-center gap-2 transition-colors ${
-          saved
-            ? 'text-emerald-500'
-            : 'text-neutral-500 hover:text-emerald-500 dark:text-neutral-400'
+          saved ? 'text-accent' : 'text-text-muted hover:text-accent'
         }`}
       >
         <Bookmark size={20} fill={saved ? 'currentColor' : 'none'} />
@@ -81,7 +77,7 @@ export function ArticleActions({
       </button>
 
       {/* Views */}
-      <div className="flex items-center gap-2 text-neutral-400">
+      <div className="flex items-center gap-2 text-text-muted">
         <Eye size={20} />
         <span className="text-sm">{formatCount(counts.views)}</span>
       </div>
@@ -89,7 +85,7 @@ export function ArticleActions({
       {/* Share */}
       <button
         onClick={handleShare}
-        className="flex items-center gap-2 text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+        className="flex items-center gap-2 text-text-muted transition-colors hover:text-text"
       >
         <Share2 size={20} />
       </button>
