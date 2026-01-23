@@ -7,106 +7,82 @@ import type {
   UpdateOpinionRequest,
   OpinionDTO,
   OpinionLikeToggleResponse,
-  OpinionReplyDTO,
   CreateReplyRequest,
   UpdateReplyRequest,
+  OpinionReplyDTO,
 } from '@emc3/shared';
 
 // ═══════════════════════════════════════════════════════════
-// OPINION API - FAZ 6
+// Opinion API
 // ═══════════════════════════════════════════════════════════
 
-/**
- * Get opinions for an article
- */
-export async function getOpinions(
-  articleId: string,
-  params: OpinionListParams = {}
-): Promise<OpinionListResponse> {
-  const searchParams = new URLSearchParams();
-  
-  if (params.sort) searchParams.append('sort', params.sort);
-  searchParams.append('limit', (params.limit ?? 20).toString());
-  if (params.cursor) searchParams.append('cursor', params.cursor);
-  
-  return apiClient.get(`/articles/${articleId}/opinions?${searchParams}`);
-}
+export const opinionsApi = {
+  /**
+   * Get opinions for an article
+   */
+  getOpinions: async (
+    articleId: string,
+    params?: OpinionListParams
+  ): Promise<OpinionListResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.sort) searchParams.set('sort', params.sort);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.cursor) searchParams.set('cursor', params.cursor);
 
-/**
- * Create a new opinion
- */
-export async function createOpinion(
-  articleId: string,
-  data: CreateOpinionRequest
-): Promise<CreateOpinionResponse> {
-  return apiClient.post(`/articles/${articleId}/opinions`, data);
-}
+    const queryString = searchParams.toString();
+    const path = `/articles/${articleId}/opinions${queryString ? `?${queryString}` : ''}`;
 
-/**
- * Update an opinion
- */
-export async function updateOpinion(
-  opinionId: string,
-  data: UpdateOpinionRequest
-): Promise<OpinionDTO> {
-  return apiClient.put(`/opinions/${opinionId}`, data);
-}
+    return apiClient.get<OpinionListResponse>(path);
+  },
 
-/**
- * Remove an opinion (mod/admin only)
- */
-export async function removeOpinion(
-  opinionId: string,
-  reason?: string
-): Promise<void> {
-  return apiClient.delete(`/opinions/${opinionId}`, {
-    body: reason ? { reason } : undefined,
-  });
-}
+  /**
+   * Create opinion
+   */
+  createOpinion: async (
+    articleId: string,
+    input: CreateOpinionRequest
+  ): Promise<CreateOpinionResponse> => {
+    return apiClient.post<CreateOpinionResponse>(`/articles/${articleId}/opinions`, input);
+  },
 
-// ═══════════════════════════════════════════════════════════
-// OPINION LIKES
-// ═══════════════════════════════════════════════════════════
+  /**
+   * Update opinion
+   */
+  updateOpinion: async (
+    opinionId: string,
+    input: UpdateOpinionRequest
+  ): Promise<OpinionDTO> => {
+    return apiClient.put<OpinionDTO>(`/opinions/${opinionId}`, input);
+  },
 
-/**
- * Like an opinion
- */
-export async function likeOpinion(
-  opinionId: string
-): Promise<OpinionLikeToggleResponse> {
-  return apiClient.post(`/opinions/${opinionId}/like`);
-}
+  /**
+   * Like opinion
+   */
+  likeOpinion: async (opinionId: string): Promise<OpinionLikeToggleResponse> => {
+    return apiClient.post<OpinionLikeToggleResponse>(`/opinions/${opinionId}/like`);
+  },
 
-/**
- * Unlike an opinion
- */
-export async function unlikeOpinion(
-  opinionId: string
-): Promise<OpinionLikeToggleResponse> {
-  return apiClient.delete(`/opinions/${opinionId}/like`);
-}
+  /**
+   * Unlike opinion
+   */
+  unlikeOpinion: async (opinionId: string): Promise<OpinionLikeToggleResponse> => {
+    return apiClient.delete<OpinionLikeToggleResponse>(`/opinions/${opinionId}/like`);
+  },
 
-// ═══════════════════════════════════════════════════════════
-// AUTHOR REPLY
-// ═══════════════════════════════════════════════════════════
+  /**
+   * Create reply
+   */
+  createReply: async (opinionId: string, input: CreateReplyRequest): Promise<OpinionReplyDTO> => {
+    return apiClient.post<OpinionReplyDTO>(`/opinions/${opinionId}/reply`, input);
+  },
 
-/**
- * Create a reply to an opinion (article author only)
- */
-export async function createReply(
-  opinionId: string,
-  data: CreateReplyRequest
-): Promise<OpinionReplyDTO> {
-  return apiClient.post(`/opinions/${opinionId}/reply`, data);
-}
-
-/**
- * Update a reply
- */
-export async function updateReply(
-  opinionId: string,
-  data: UpdateReplyRequest
-): Promise<OpinionReplyDTO> {
-  return apiClient.put(`/opinions/${opinionId}/reply`, data);
-}
-
+  /**
+   * Update reply
+   */
+  updateReply: async (
+    opinionId: string,
+    input: UpdateReplyRequest
+  ): Promise<OpinionReplyDTO> => {
+    return apiClient.put<OpinionReplyDTO>(`/opinions/${opinionId}/reply`, input);
+  },
+};

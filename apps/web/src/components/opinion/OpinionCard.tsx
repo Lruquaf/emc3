@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Pencil } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 
 import { MarkdownPreview } from '../editor/MarkdownPreview';
 import { OpinionLikeButton } from './OpinionLikeButton';
 import { AuthorReply } from './AuthorReply';
 import { AuthorReplyComposer } from './AuthorReplyComposer';
+import { RemoveOpinionDialog } from './RemoveOpinionDialog';
+import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../utils/cn';
 import type { OpinionDTO } from '@emc3/shared';
 import { OPINION_BODY_MIN_LENGTH, OPINION_BODY_MAX_LENGTH } from '@emc3/shared';
@@ -17,6 +19,7 @@ interface OpinionCardProps {
   onUpdate: (bodyMarkdown: string) => Promise<void>;
   onReply: (bodyMarkdown: string) => Promise<void>;
   onReplyUpdate: (bodyMarkdown: string) => Promise<void>;
+  onRemove?: () => void;
   isHighlighted?: boolean;
 }
 
@@ -25,12 +28,17 @@ export function OpinionCard({
   onUpdate,
   onReply,
   onReplyUpdate,
+  onRemove,
   isHighlighted = false,
 }: OpinionCardProps) {
+  const { hasRole } = useAuth();
+  const isAdminOrModerator = hasRole('ADMIN') || hasRole('REVIEWER');
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [editContent, setEditContent] = useState(opinion.bodyMarkdown);
   const [isSaving, setIsSaving] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
   const timeAgo = formatDistanceToNow(new Date(opinion.createdAt), {
     addSuffix: true,
@@ -76,7 +84,7 @@ export function OpinionCard({
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">
         <Link
-          to={`/@${opinion.author.username}`}
+          to={`/user/${opinion.author.username}`}
           className="flex items-center gap-3 hover:opacity-80"
         >
           {/* Avatar */}
@@ -114,16 +122,30 @@ export function OpinionCard({
           </div>
         </Link>
 
-        {/* Edit button (only for author within edit window) */}
-        {opinion.canEdit && !isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
-            title="Düzenle (10 dakika içinde)"
-          >
-            <Pencil size={16} />
-          </button>
-        )}
+        {/* Action buttons */}
+        <div className="flex items-center gap-1">
+          {/* Edit button (only for author within edit window) */}
+          {opinion.canEdit && !isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+              title="Düzenle (10 dakika içinde)"
+            >
+              <Pencil size={16} />
+            </button>
+          )}
+          
+          {/* Remove button (only for admin/moderator) */}
+          {isAdminOrModerator && !isEditing && (
+            <button
+              onClick={() => setShowRemoveDialog(true)}
+              className="rounded-lg p-2 text-neutral-400 hover:bg-rose-50 hover:text-rose-600"
+              title="Mütalaayı kaldır (Admin/Moderatör)"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Body */}
@@ -193,7 +215,12 @@ export function OpinionCard({
       {/* Author Reply */}
       {opinion.reply && (
         <div className="mt-4 border-t border-neutral-100 pt-4">
-          <AuthorReply reply={opinion.reply} onUpdate={onReplyUpdate} />
+          <AuthorReply
+            reply={opinion.reply}
+            opinionId={opinion.id}
+            onUpdate={onReplyUpdate}
+            onRemove={onRemove}
+          />
         </div>
       )}
 
@@ -205,6 +232,20 @@ export function OpinionCard({
             onCancel={() => setIsReplying(false)}
           />
         </div>
+      )}
+
+      {/* Remove Opinion Dialog */}
+      {showRemoveDialog && (
+        <RemoveOpinionDialog
+          opinionId={opinion.id}
+          onClose={() => setShowRemoveDialog(false)}
+          onSuccess={() => {
+            setShowRemoveDialog(false);
+            if (onRemove) {
+              onRemove();
+            }
+          }}
+        />
       )}
     </div>
   );

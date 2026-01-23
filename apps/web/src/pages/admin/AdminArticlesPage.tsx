@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Search, Trash2, RotateCcw, ExternalLink } from 'lucide-react';
@@ -9,17 +9,22 @@ import type { AdminArticleDTO } from '@emc3/shared';
 export function AdminArticlesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('query') || '');
+  const queryFromUrl = searchParams.get('query') || '';
+  const [searchInput, setSearchInput] = useState(queryFromUrl);
   const [removeModal, setRemoveModal] = useState<{ article: AdminArticleDTO; reason: string } | null>(null);
+
+  useEffect(() => {
+    setSearchInput(queryFromUrl);
+  }, [queryFromUrl]);
 
   const page = parseInt(searchParams.get('page') || '1');
   const statusFilter = searchParams.get('status') as 'PUBLISHED' | 'REMOVED' | undefined;
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'articles', { query: searchQuery, status: statusFilter, page }],
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['admin', 'articles', { query: queryFromUrl, status: statusFilter, page }],
     queryFn: () =>
       adminArticlesApi.list({
-        query: searchQuery || undefined,
+        query: queryFromUrl || undefined,
         status: statusFilter,
         page,
         limit: 20,
@@ -45,8 +50,9 @@ export function AdminArticlesPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams(searchParams);
-    if (searchQuery) {
-      params.set('query', searchQuery);
+    const q = searchInput.trim();
+    if (q) {
+      params.set('query', q);
     } else {
       params.delete('query');
     }
@@ -74,17 +80,23 @@ export function AdminArticlesPage() {
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-4">
-        <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
-          <div className="relative">
+        <form onSubmit={handleSearch} className="flex flex-1 min-w-[200px] gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
             <input
               type="search"
               placeholder="Başlık veya özet ara..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
+          <button
+            type="submit"
+            className="rounded-lg border border-border bg-bg px-4 py-2 text-sm font-medium text-text hover:bg-border focus:outline-none focus:ring-2 focus:ring-accent"
+          >
+            Ara
+          </button>
         </form>
 
         <select
@@ -98,7 +110,32 @@ export function AdminArticlesPage() {
         </select>
       </div>
 
+      {/* Error state */}
+      {isError && (
+        <div className="mb-6 rounded-xl border border-danger/30 bg-danger/5 p-6 text-center">
+          <p className="text-text font-medium">Makaleler yüklenirken hata oluştu</p>
+          <p className="mt-1 text-sm text-muted">
+            Bağlantı veya sunucu kaynaklı bir sorun olabilir.
+          </p>
+          {import.meta.env.DEV && error && (
+            <p className="mt-2 mx-auto max-w-xl text-left text-sm font-mono text-danger">
+              {typeof error === 'object' && 'message' in error
+                ? String((error as { message?: string }).message)
+                : String(error)}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+          >
+            Tekrar Dene
+          </button>
+        </div>
+      )}
+
       {/* Table */}
+      {!isError && (
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <table className="w-full">
           <thead className="bg-bg">
@@ -120,7 +157,9 @@ export function AdminArticlesPage() {
             ) : data?.items.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                  Makale bulunamadı
+                  {queryFromUrl
+                    ? `"${queryFromUrl}" için makale bulunamadı.`
+                    : 'Makale bulunamadı.'}
                 </td>
               </tr>
             ) : (
@@ -192,6 +231,7 @@ export function AdminArticlesPage() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Pagination */}
       {data && data.meta.totalPages > 1 && (

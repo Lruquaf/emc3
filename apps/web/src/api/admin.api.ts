@@ -307,3 +307,23 @@ export const adminAppealsApi = {
     await apiClient.post(`/admin/appeals/${id}/close`, { resolution, message });
   },
 };
+
+// ═══════════════════════════════════════════════════════════
+// Opinion Moderation API
+// ═══════════════════════════════════════════════════════════
+
+export const adminOpinionsApi = {
+  /**
+   * Remove opinion
+   */
+  removeOpinion: async (id: string, reason: string): Promise<void> => {
+    await apiClient.post(`/admin/opinions/${id}/remove`, { reason });
+  },
+
+  /**
+   * Remove opinion reply
+   */
+  removeOpinionReply: async (id: string, reason: string): Promise<void> => {
+    await apiClient.post(`/admin/opinions/${id}/reply/remove`, { reason });
+  },
+};

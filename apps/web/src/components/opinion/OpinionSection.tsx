@@ -1,185 +1,149 @@
 import { useState } from 'react';
-import { MessageSquareText, TrendingUp, Clock } from 'lucide-react';
 
-import {
-  useOpinions,
-  useCreateOpinion,
-  useUpdateOpinion,
-  useCreateReply,
-  useUpdateReply,
-} from '../../hooks/useOpinions';
-import { OpinionCard } from './OpinionCard';
+import { useOpinions, useCreateOpinion, useUpdateOpinion, useCreateReply, useUpdateReply } from '../../hooks/useOpinions';
 import { OpinionComposer } from './OpinionComposer';
 import { OpinionList } from './OpinionList';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { cn } from '../../utils/cn';
-import type { OpinionSortOption } from '@emc3/shared';
+import { ErrorDisplay } from '../ui/ErrorDisplay';
 
 interface OpinionSectionProps {
   articleId: string;
   articleAuthorId: string;
 }
 
-export function OpinionSection({
-  articleId,
-  articleAuthorId,
-}: OpinionSectionProps) {
-  const [sort, setSort] = useState<OpinionSortOption>('helpful');
+export function OpinionSection({ articleId, articleAuthorId }: OpinionSectionProps) {
+  const [sort, setSort] = useState<'helpful' | 'new'>('helpful');
 
   const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+    data: opinionsData,
     isLoading,
-    isError,
+    error,
     refetch,
-  } = useOpinions({ articleId, sort, limit: 10 });
+  } = useOpinions(articleId, { sort, limit: 20 });
 
-  const createOpinion = useCreateOpinion(articleId);
-  const updateOpinion = useUpdateOpinion(articleId);
-  const createReply = useCreateReply(articleId);
-  const updateReply = useUpdateReply(articleId);
-
-  const opinions = data?.pages.flatMap((page) => page.items) ?? [];
-  const totalCount = data?.pages[0]?.meta.total ?? 0;
-  const viewerOpinion = data?.pages[0]?.viewerOpinion;
+  const createOpinionMutation = useCreateOpinion();
+  const updateOpinionMutation = useUpdateOpinion();
+  const createReplyMutation = useCreateReply();
+  const updateReplyMutation = useUpdateReply();
 
   const handleCreateOpinion = async (bodyMarkdown: string) => {
-    await createOpinion.mutateAsync(bodyMarkdown);
-    refetch();
+    await createOpinionMutation.mutateAsync({
+      articleId,
+      input: { bodyMarkdown },
+    });
   };
 
-  const handleUpdateOpinion = async (
-    opinionId: string,
-    bodyMarkdown: string
-  ) => {
-    await updateOpinion.mutateAsync({ opinionId, bodyMarkdown });
-    refetch();
+  const handleUpdateOpinion = async (opinionId: string, bodyMarkdown: string) => {
+    await updateOpinionMutation.mutateAsync({
+      opinionId,
+      input: { bodyMarkdown },
+    });
   };
 
   const handleCreateReply = async (opinionId: string, bodyMarkdown: string) => {
-    await createReply.mutateAsync({ opinionId, bodyMarkdown });
-    refetch();
+    await createReplyMutation.mutateAsync({
+      opinionId,
+      input: { bodyMarkdown },
+    });
   };
 
   const handleUpdateReply = async (opinionId: string, bodyMarkdown: string) => {
-    await updateReply.mutateAsync({ opinionId, bodyMarkdown });
-    refetch();
+    await updateReplyMutation.mutateAsync({
+      opinionId,
+      input: { bodyMarkdown },
+    });
   };
 
-  return (
-    <section className="mt-12 border-t border-neutral-200 pt-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <MessageSquareText size={24} className="text-emerald-600" />
-          <h2 className="text-xl font-bold text-neutral-900">
-            Mütalaalar
-            {totalCount > 0 && (
-              <span className="ml-2 text-neutral-500">({totalCount})</span>
-            )}
-          </h2>
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-neutral-200 bg-white p-8 shadow-sm">
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner size="lg" />
         </div>
+      </div>
+    );
+  }
 
-        {/* Sort Toggle */}
-        <div className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-1">
+  if (error) {
+    return (
+      <div className="rounded-xl border border-neutral-200 bg-white p-8 shadow-sm">
+        <ErrorDisplay error={error} onRetry={() => refetch()} />
+      </div>
+    );
+  }
+
+  const opinions = opinionsData?.items ?? [];
+  const viewerOpinion = opinionsData?.viewerOpinion;
+  const hasViewerOpinion = !!viewerOpinion;
+
+  // Safety check
+  if (!Array.isArray(opinions)) {
+    return (
+      <div className="rounded-xl border border-neutral-200 bg-white p-8 shadow-sm">
+        <div className="text-center text-neutral-500">
+          <p>Mütalaalar yüklenirken bir hata oluştu.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-neutral-200 bg-white p-8 shadow-sm">
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-neutral-900">
+          Mütalaalar
+          {opinionsData?.meta.total !== undefined && (
+            <span className="ml-2 text-lg font-normal text-neutral-500">
+              ({opinionsData.meta.total})
+            </span>
+          )}
+        </h2>
+
+        {/* Sort buttons */}
+        <div className="flex gap-2">
           <button
             onClick={() => setSort('helpful')}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               sort === 'helpful'
                 ? 'bg-emerald-100 text-emerald-700'
-                : 'text-neutral-600 hover:bg-neutral-50'
-            )}
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
           >
-            <TrendingUp size={16} />
             En Faydalı
           </button>
           <button
             onClick={() => setSort('new')}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               sort === 'new'
                 ? 'bg-emerald-100 text-emerald-700'
-                : 'text-neutral-600 hover:bg-neutral-50'
-            )}
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
           >
-            <Clock size={16} />
             En Yeni
           </button>
         </div>
       </div>
 
       {/* Opinion Composer */}
-      <div className="mb-8">
-        <OpinionComposer
-          onSubmit={handleCreateOpinion}
-          hasExistingOpinion={!!viewerOpinion}
-          disabled={createOpinion.isPending}
-        />
-      </div>
-
-      {/* Viewer's Own Opinion (highlighted) */}
-      {viewerOpinion && (
+      {!hasViewerOpinion && (
         <div className="mb-6">
-          <div className="mb-2 text-sm font-medium text-emerald-600">
-            Sizin Mütalaanız
-          </div>
-          <OpinionCard
-            opinion={viewerOpinion}
-            onUpdate={(content) => handleUpdateOpinion(viewerOpinion.id, content)}
-            onReply={(content) => handleCreateReply(viewerOpinion.id, content)}
-            onReplyUpdate={(content) =>
-              handleUpdateReply(viewerOpinion.id, content)
-            }
-            isHighlighted
+          <OpinionComposer
+            onSubmit={handleCreateOpinion}
+            hasExistingOpinion={hasViewerOpinion}
+            disabled={createOpinionMutation.isPending}
           />
         </div>
       )}
 
       {/* Opinion List */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <LoadingSpinner size="lg" />
-        </div>
-      ) : isError ? (
-        <div className="py-8 text-center text-neutral-500">
-          Mütalaalar yüklenirken bir hata oluştu.
-        </div>
-      ) : opinions.length === 0 && !viewerOpinion ? (
-        <div className="py-8 text-center text-neutral-500">
-          Henüz mütalaa yok. İlk mütalaa yazan siz olun!
-        </div>
-      ) : (
-        <OpinionList
-          opinions={opinions.filter((o) => o.id !== viewerOpinion?.id)}
-          onUpdate={handleUpdateOpinion}
-          onReply={handleCreateReply}
-          onReplyUpdate={handleUpdateReply}
-        />
-      )}
-
-      {/* Load More */}
-      {hasNextPage && (
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-          >
-            {isFetchingNextPage ? (
-              <>
-                <LoadingSpinner size="sm" />
-                Yükleniyor...
-              </>
-            ) : (
-              'Daha Fazla Yükle'
-            )}
-          </button>
-        </div>
-      )}
-    </section>
+      <OpinionList
+        opinions={opinions}
+        onUpdate={(opinionId, bodyMarkdown) => handleUpdateOpinion(opinionId, bodyMarkdown)}
+        onReply={(opinionId, bodyMarkdown) => handleCreateReply(opinionId, bodyMarkdown)}
+        onReplyUpdate={(opinionId, bodyMarkdown) => handleUpdateReply(opinionId, bodyMarkdown)}
+        onRemove={() => refetch()}
+        highlightedOpinionId={viewerOpinion?.id}
+      />
+    </div>
   );
 }
-

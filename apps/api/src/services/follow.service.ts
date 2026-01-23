@@ -2,6 +2,7 @@ import type {
   FollowToggleResponse,
   FollowListResponse,
   UserSummaryDTO,
+  UserProfileDTO,
 } from '@emc3/shared';
 
 import { prisma } from '../lib/prisma.js';
@@ -235,6 +236,63 @@ export async function isFollowing(
     },
   });
   return !!follow;
+}
+
+/**
+ * Get user profile by username (for profile page)
+ */
+export async function getUserProfile(
+  username: string,
+  viewerId?: string
+): Promise<UserProfileDTO> {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    include: {
+      profile: true,
+      ban: true,
+    },
+  });
+
+  if (!user) {
+    throw AppError.notFound('User not found');
+  }
+
+  const [articleCount, followerCount, followingCount, isFollowingResult] =
+    await Promise.all([
+      prisma.article.count({
+        where: {
+          authorId: user.id,
+          status: 'PUBLISHED',
+          revisions: { some: { status: 'REV_PUBLISHED' } },
+        },
+      }),
+      getFollowerCount(user.id),
+      prisma.follow.count({
+        where: { followerId: user.id },
+      }),
+      viewerId ? isFollowing(viewerId, user.id) : Promise.resolve(false),
+    ]);
+
+  const socialLinks = (user.profile?.socialLinks as Record<string, string>) ?? {};
+
+  return {
+    id: user.id,
+    username: user.username,
+    profile: {
+      displayName: user.profile?.displayName ?? null,
+      about: user.profile?.about ?? null,
+      avatarUrl: user.profile?.avatarUrl ?? null,
+      socialLinks,
+    },
+    stats: {
+      articleCount,
+      followerCount,
+      followingCount,
+    },
+    isFollowing: isFollowingResult,
+    isBanned: user.ban?.isBanned ?? false,
+    createdAt: user.createdAt.toISOString(),
+  };
 }
 
 // ═══════════════════════════════════════════════════════════

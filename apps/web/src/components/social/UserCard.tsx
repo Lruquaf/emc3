@@ -24,7 +24,7 @@ export function UserCard({
       )}
     >
       <Link
-        to={`/@${user.username}`}
+        to={`/user/${user.username}`}
         className="flex items-center gap-3 hover:opacity-80"
       >
         {/* Avatar */}

@@ -19,6 +19,8 @@ import {
   banUserSchema,
   updateRoleSchema,
   removeArticleSchema,
+  removeOpinionSchema,
+  removeOpinionReplySchema,
   auditLogListQuerySchema,
   appealListQuerySchema,
   appealMessageSchema,
@@ -26,6 +28,7 @@ import {
   userIdParamSchema,
   appealIdParamSchema,
   articleIdParamSchema,
+  OpinionIdParamSchema,
 } from '@emc3/shared';
 
 export const adminRouter = Router();
@@ -221,4 +224,21 @@ adminRouter.delete(
   requireAdmin,
   validateParams(categoryIdParamSchema),
   categoriesController.deleteCategory
+);
+
+// Opinion Moderation (REVIEWER or ADMIN)
+adminRouter.post(
+  '/opinions/:id/remove',
+  requireReviewer,
+  validateParams(OpinionIdParamSchema),
+  validate(removeOpinionSchema),
+  adminController.removeOpinion
+);
+
+adminRouter.post(
+  '/opinions/:id/reply/remove',
+  requireReviewer,
+  validateParams(OpinionIdParamSchema),
+  validate(removeOpinionReplySchema),
+  adminController.removeOpinionReply
 );

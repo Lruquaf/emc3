@@ -3,6 +3,30 @@ import type { Request, Response, NextFunction } from 'express';
 import * as followService from '../services/follow.service.js';
 
 // ═══════════════════════════════════════════════════════════
+// Profile Endpoint
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * GET /api/v1/users/:username
+ * Get user profile by username (public, optional auth for isFollowing)
+ */
+export async function getProfile(
+  req: Request<{ username: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { username } = req.params;
+    const viewerId = req.user?.id;
+
+    const result = await followService.getUserProfile(username, viewerId);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // Follow/Unfollow Endpoints
 // ═══════════════════════════════════════════════════════════
 

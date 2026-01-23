@@ -1,586 +1,494 @@
-import { ArticleStatus, Prisma } from '@prisma/client';
+import type {
+  OpinionDTO,
+  OpinionListResponse,
+  OpinionListParams,
+  CreateOpinionRequest,
+  CreateOpinionResponse,
+  UpdateOpinionRequest,
+  OpinionLikeToggleResponse,
+  CreateReplyRequest,
+  UpdateReplyRequest,
+  OpinionAuthorDTO,
+  OpinionReplyDTO,
+} from '@emc3/shared';
+import { OPINION_EDIT_WINDOW_MS } from '@emc3/shared';
+
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../utils/errors.js';
-import { auditService } from './audit.service.js';
-import {
-  OPINION_EDIT_WINDOW_MS,
-  AUDIT_ACTIONS,
-  type OpinionDTO,
-  type OpinionListResponse,
-  type OpinionListParams,
-  type CreateOpinionResponse,
-  type OpinionLikeToggleResponse,
-  type OpinionReplyDTO,
-} from '@emc3/shared';
 
 // ═══════════════════════════════════════════════════════════
-// OPINION SERVICE - FAZ 6
+// Opinion Service
 // ═══════════════════════════════════════════════════════════
 
-export class OpinionService {
-  // ═══════════════════════════════════════════════════════════
-  // LIST OPINIONS
-  // ═══════════════════════════════════════════════════════════
+/**
+ * Get opinions for an article
+ */
+export async function getOpinions(
+  articleId: string,
+  viewerId: string | undefined,
+  params: OpinionListParams
+): Promise<OpinionListResponse> {
+  // Validate article exists
+  const article = await prisma.article.findUnique({
+    where: { id: articleId },
+    select: { id: true, authorId: true },
+  });
 
-  async listOpinions(
-    articleId: string,
-    params: OpinionListParams,
-    viewerId?: string
-  ): Promise<OpinionListResponse> {
-    const { sort = 'helpful', limit = 20, cursor } = params;
+  if (!article) {
+    throw AppError.notFound('Article not found');
+  }
 
-    // Verify article exists and is published
-    const article = await this.getPublishedArticle(articleId);
+  const { sort = 'helpful', limit = 20, cursor } = params;
+  const takeLimit = Math.min(limit, 50);
 
-    // Build where clause
-    const where: Prisma.OpinionWhereInput = {
-      articleId,
-      removedAt: null, // Exclude removed opinions
-    };
+  // Build where clause
+  const where: {
+    articleId: string;
+    removedAt: null;
+    createdAt?: { lt?: Date };
+  } = {
+    articleId,
+    removedAt: null,
+  };
 
-    // Cursor handling
-    if (cursor) {
-      const cursorData = this.decodeCursor(cursor);
-      if (sort === 'helpful') {
-        where.OR = [
-          { likeCount: { lt: cursorData.likeCount } },
-          {
-            likeCount: cursorData.likeCount,
-            createdAt: { lt: new Date(cursorData.createdAt) },
-          },
-        ];
-      } else {
-        where.createdAt = { lt: new Date(cursorData.createdAt) };
-      }
-    }
+  // Cursor-based pagination
+  if (cursor) {
+    where.createdAt = { lt: new Date(cursor) };
+  }
 
-    // Sort order
-    const orderBy: Prisma.OpinionOrderByWithRelationInput[] =
-      sort === 'helpful'
-        ? [{ likeCount: 'desc' }, { createdAt: 'desc' }]
-        : [{ createdAt: 'desc' }];
+  // Get opinions with sorting
+  const orderBy =
+    sort === 'helpful'
+      ? [{ likeCount: 'desc' as const }, { createdAt: 'desc' as const }]
+      : [{ createdAt: 'desc' as const }];
 
-    // Get opinions
-    const opinions = await prisma.opinion.findMany({
+  const [opinions, total, viewerOpinion] = await Promise.all([
+    prisma.opinion.findMany({
       where,
       include: {
         author: {
-          include: { profile: true },
+          include: {
+            profile: { select: { displayName: true, avatarUrl: true } },
+          },
         },
+        likes: viewerId ? { where: { userId: viewerId } } : { where: { userId: { in: [] } } }, // Empty array if no viewerId
         reply: {
           include: {
             replier: {
-              include: { profile: true },
-            },
-          },
-        },
-        likes: viewerId
-          ? {
-              where: { userId: viewerId },
-              select: { userId: true },
-            }
-          : false,
-      },
-      orderBy,
-      take: limit + 1,
-    });
-
-    // Get viewer's own opinion (if exists)
-    let viewerOpinion: OpinionDTO | undefined;
-    if (viewerId) {
-      const ownOpinion = await prisma.opinion.findUnique({
-        where: {
-          articleId_authorId: { articleId, authorId: viewerId },
-        },
-        include: {
-          author: {
-            include: { profile: true },
-          },
-          reply: {
-            include: {
-              replier: {
-                include: { profile: true },
+              include: {
+                profile: { select: { displayName: true, avatarUrl: true } },
               },
             },
           },
-          likes: {
-            where: { userId: viewerId },
-            select: { userId: true },
+        },
+      },
+      orderBy,
+      take: takeLimit + 1, // Fetch one extra to check if there's more
+    }),
+    prisma.opinion.count({ where: { articleId, removedAt: null } }),
+    viewerId
+      ? prisma.opinion.findFirst({
+          where: {
+            articleId,
+            authorId: viewerId,
           },
-        },
-      });
-
-      if (ownOpinion && !ownOpinion.removedAt) {
-        viewerOpinion = this.mapToOpinionDTO(
-          ownOpinion,
-          viewerId,
-          article.authorId
-        );
-      }
-    }
-
-    // Get total count
-    const total = await prisma.opinion.count({
-      where: { articleId, removedAt: null },
-    });
-
-    const hasMore = opinions.length > limit;
-    const items = opinions.slice(0, limit);
-
-    return {
-      items: items.map((opinion) =>
-        this.mapToOpinionDTO(opinion, viewerId, article.authorId)
-      ),
-      meta: {
-        total,
-        nextCursor: hasMore
-          ? this.encodeCursor(items[items.length - 1], sort)
-          : null,
-        hasMore,
-      },
-      viewerOpinion,
-    };
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // CREATE OPINION
-  // ═══════════════════════════════════════════════════════════
-
-  async createOpinion(
-    articleId: string,
-    authorId: string,
-    bodyMarkdown: string
-  ): Promise<CreateOpinionResponse> {
-    // Verify article exists and is published
-    const article = await this.getPublishedArticle(articleId);
-
-    // Check if user already has an opinion on this article
-    const existingOpinion = await prisma.opinion.findUnique({
-      where: {
-        articleId_authorId: { articleId, authorId },
-      },
-    });
-
-    if (existingOpinion) {
-      throw AppError.conflict('You have already posted an opinion on this article');
-    }
-
-    // Create opinion
-    const opinion = await prisma.opinion.create({
-      data: {
-        articleId,
-        authorId,
-        bodyMarkdown,
-      },
-      include: {
-        author: {
-          include: { profile: true },
-        },
-        reply: true,
-        likes: false,
-      },
-    });
-
-    return {
-      opinion: this.mapToOpinionDTO(opinion, authorId, article.authorId),
-    };
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // UPDATE OPINION
-  // ═══════════════════════════════════════════════════════════
-
-  async updateOpinion(
-    opinionId: string,
-    userId: string,
-    bodyMarkdown: string
-  ): Promise<OpinionDTO> {
-    const opinion = await this.getOpinionWithArticle(opinionId);
-
-    // Check ownership
-    if (opinion.authorId !== userId) {
-      throw AppError.forbidden('You can only edit your own opinion');
-    }
-
-    // Check edit window
-    if (!this.canEdit(opinion.createdAt)) {
-      throw AppError.forbidden(
-        'Edit window has expired. Opinions can only be edited within 10 minutes of posting.'
-      );
-    }
-
-    // Update
-    const updated = await prisma.opinion.update({
-      where: { id: opinionId },
-      data: { bodyMarkdown },
-      include: {
-        author: {
-          include: { profile: true },
-        },
-        reply: {
           include: {
-            replier: {
-              include: { profile: true },
+            author: {
+              include: {
+                profile: { select: { displayName: true, avatarUrl: true } },
+              },
+            },
+            likes: { where: { userId: viewerId } },
+            reply: {
+              include: {
+                replier: {
+                  include: {
+                    profile: { select: { displayName: true, avatarUrl: true } },
+                  },
+                },
+              },
+            },
+          },
+        })
+      : null,
+  ]);
+
+  const hasMore = opinions.length > takeLimit;
+  const items = opinions.slice(0, takeLimit);
+  const lastItem = items.length > 0 ? items[items.length - 1] : null;
+
+  return {
+    items: items.map((op) => mapToOpinionDTO(op, viewerId, article.authorId)),
+    meta: {
+      total,
+      nextCursor: hasMore && lastItem ? lastItem.createdAt.toISOString() : null,
+      hasMore,
+    },
+    viewerOpinion: viewerOpinion
+      ? mapToOpinionDTO(viewerOpinion, viewerId, article.authorId)
+      : undefined,
+  };
+}
+
+/**
+ * Create opinion
+ */
+export async function createOpinion(
+  articleId: string,
+  authorId: string,
+  input: CreateOpinionRequest
+): Promise<CreateOpinionResponse> {
+  // Validate article exists
+  const article = await prisma.article.findUnique({
+    where: { id: articleId },
+    select: { id: true, authorId: true },
+  });
+
+  if (!article) {
+    throw AppError.notFound('Article not found');
+  }
+
+  // Check if user already has an opinion
+  const existing = await prisma.opinion.findFirst({
+    where: {
+      articleId,
+      authorId,
+    },
+  });
+
+  if (existing) {
+    throw AppError.conflict('You already have an opinion on this article');
+  }
+
+  // Create opinion
+  const opinion = await prisma.opinion.create({
+    data: {
+      articleId,
+      authorId,
+      bodyMarkdown: input.bodyMarkdown,
+    },
+    include: {
+      author: {
+        include: {
+          profile: { select: { displayName: true, avatarUrl: true } },
+        },
+      },
+      likes: false,
+      reply: null,
+    },
+  });
+
+  return {
+    opinion: mapToOpinionDTO(opinion, authorId, article.authorId),
+  };
+}
+
+/**
+ * Update opinion (within edit window)
+ */
+export async function updateOpinion(
+  opinionId: string,
+  authorId: string,
+  input: UpdateOpinionRequest
+): Promise<OpinionDTO> {
+  const opinion = await prisma.opinion.findUnique({
+    where: { id: opinionId },
+    include: {
+      article: { select: { authorId: true } },
+    },
+  });
+
+  if (!opinion) {
+    throw AppError.notFound('Opinion not found');
+  }
+
+  if (opinion.authorId !== authorId) {
+    throw AppError.forbidden('You can only edit your own opinions');
+  }
+
+  // Check edit window (10 minutes)
+  const now = new Date();
+  const createdAt = opinion.createdAt;
+  const editWindowEnd = new Date(createdAt.getTime() + OPINION_EDIT_WINDOW_MS);
+
+  if (now > editWindowEnd) {
+    throw AppError.forbidden('Edit window has expired (10 minutes)');
+  }
+
+  // Update opinion
+  const updated = await prisma.opinion.update({
+    where: { id: opinionId },
+    data: { bodyMarkdown: input.bodyMarkdown },
+    include: {
+      author: {
+        include: {
+          profile: { select: { displayName: true, avatarUrl: true } },
+        },
+      },
+      likes: { where: { userId: authorId } },
+      reply: {
+        include: {
+          replier: {
+            include: {
+              profile: { select: { displayName: true, avatarUrl: true } },
             },
           },
         },
-        likes: {
-          where: { userId },
-          select: { userId: true },
-        },
       },
-    });
+    },
+  });
 
-    return this.mapToOpinionDTO(updated, userId, opinion.article.authorId);
+  return mapToOpinionDTO(updated, authorId, opinion.article.authorId);
+}
+
+/**
+ * Like/unlike opinion
+ */
+export async function toggleOpinionLike(
+  opinionId: string,
+  userId: string
+): Promise<OpinionLikeToggleResponse> {
+  const opinion = await prisma.opinion.findUnique({
+    where: { id: opinionId },
+    select: { id: true, likeCount: true },
+  });
+
+  if (!opinion) {
+    throw AppError.notFound('Opinion not found');
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // REMOVE OPINION (Soft Delete)
-  // ═══════════════════════════════════════════════════════════
-
-  async removeOpinion(
-    opinionId: string,
-    moderatorId: string,
-    reason?: string
-  ): Promise<void> {
-    const opinion = await prisma.opinion.findUnique({
-      where: { id: opinionId },
-    });
-
-    if (!opinion) {
-      throw AppError.notFound('Opinion not found');
-    }
-
-    if (opinion.removedAt) {
-      throw AppError.conflict('Opinion is already removed');
-    }
-
-    // Soft delete
-    await prisma.opinion.update({
-      where: { id: opinionId },
-      data: { removedAt: new Date() },
-    });
-
-    // Audit log
-    await auditService.log({
-      actorId: moderatorId,
-      action: AUDIT_ACTIONS.OPINION_REMOVED,
-      targetType: 'opinion',
-      targetId: opinionId,
-      reason,
-      meta: { articleId: opinion.articleId, authorId: opinion.authorId },
-    });
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // LIKE / UNLIKE
-  // ═══════════════════════════════════════════════════════════
-
-  async likeOpinion(
-    opinionId: string,
-    userId: string
-  ): Promise<OpinionLikeToggleResponse> {
-    const opinion = await this.getActiveOpinion(opinionId);
-
-    // Check if already liked
-    const existingLike = await prisma.opinionLike.findUnique({
+    const existingLike = await prisma.opinionLike.findFirst({
       where: {
-        userId_opinionId: { userId, opinionId },
+        userId,
+        opinionId,
       },
     });
 
-    if (existingLike) {
-      return {
-        liked: true,
-        likeCount: opinion.likeCount,
-      };
-    }
-
-    // Create like (use transaction to ensure count is accurate)
-    await prisma.$transaction(async (tx) => {
-      await tx.opinionLike.create({
-        data: { userId, opinionId },
-      });
-      await tx.opinion.update({
-        where: { id: opinionId },
-        data: { likeCount: { increment: 1 } },
-      });
-    });
-
-    // Get updated count
-    const updated = await prisma.opinion.findUnique({
-      where: { id: opinionId },
-      select: { likeCount: true },
-    });
-
-    return {
-      liked: true,
-      likeCount: updated?.likeCount ?? opinion.likeCount + 1,
-    };
-  }
-
-  async unlikeOpinion(
-    opinionId: string,
-    userId: string
-  ): Promise<OpinionLikeToggleResponse> {
-    const opinion = await this.getActiveOpinion(opinionId);
-
-    // Check if liked
-    const existingLike = await prisma.opinionLike.findUnique({
-      where: {
-        userId_opinionId: { userId, opinionId },
-      },
-    });
-
-    if (!existingLike) {
-      return {
-        liked: false,
-        likeCount: opinion.likeCount,
-      };
-    }
-
-    // Delete like (use transaction to ensure count is accurate)
-    await prisma.$transaction(async (tx) => {
-      await tx.opinionLike.delete({
+  if (existingLike) {
+    // Unlike
+    const [, updated] = await prisma.$transaction([
+      prisma.opinionLike.delete({
         where: {
           userId_opinionId: { userId, opinionId },
         },
-      });
-      await tx.opinion.update({
+      }),
+      prisma.opinion.update({
         where: { id: opinionId },
         data: { likeCount: { decrement: 1 } },
-      });
-    });
-
-    // Get updated count
-    const updated = await prisma.opinion.findUnique({
-      where: { id: opinionId },
-      select: { likeCount: true },
-    });
+        select: { likeCount: true },
+      }),
+    ]);
 
     return {
       liked: false,
-      likeCount: Math.max(0, updated?.likeCount ?? opinion.likeCount - 1),
+      likeCount: updated.likeCount,
     };
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // AUTHOR REPLY
-  // ═══════════════════════════════════════════════════════════
-
-  async createReply(
-    opinionId: string,
-    replierId: string,
-    bodyMarkdown: string
-  ): Promise<OpinionReplyDTO> {
-    const opinion = await this.getOpinionWithArticle(opinionId);
-
-    // Check if replier is article author
-    if (opinion.article.authorId !== replierId) {
-      throw AppError.forbidden('Only the article author can reply to opinions');
-    }
-
-    // Check if reply already exists
-    const existingReply = await prisma.opinionReply.findUnique({
-      where: { opinionId },
-    });
-
-    if (existingReply) {
-      throw AppError.conflict('You have already replied to this opinion');
-    }
-
-    // Create reply
-    const reply = await prisma.opinionReply.create({
-      data: {
-        opinionId,
-        replierId,
-        bodyMarkdown,
-      },
-      include: {
-        replier: {
-          include: { profile: true },
-        },
-      },
-    });
-
-    return this.mapToReplyDTO(reply, replierId);
-  }
-
-  async updateReply(
-    opinionId: string,
-    replierId: string,
-    bodyMarkdown: string
-  ): Promise<OpinionReplyDTO> {
-    const reply = await prisma.opinionReply.findUnique({
-      where: { opinionId },
-      include: {
-        replier: {
-          include: { profile: true },
-        },
-      },
-    });
-
-    if (!reply) {
-      throw AppError.notFound('Reply not found');
-    }
-
-    // Check ownership
-    if (reply.replierId !== replierId) {
-      throw AppError.forbidden('You can only edit your own reply');
-    }
-
-    // Check edit window
-    if (!this.canEdit(reply.createdAt)) {
-      throw AppError.forbidden(
-        'Edit window has expired. Replies can only be edited within 10 minutes.'
-      );
-    }
-
-    // Update
-    const updated = await prisma.opinionReply.update({
-      where: { opinionId },
-      data: { bodyMarkdown },
-      include: {
-        replier: {
-          include: { profile: true },
-        },
-      },
-    });
-
-    return this.mapToReplyDTO(updated, replierId);
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // HELPERS
-  // ═══════════════════════════════════════════════════════════
-
-  private async getPublishedArticle(articleId: string) {
-    const article = await prisma.article.findUnique({
-      where: { id: articleId },
-      select: { id: true, status: true, authorId: true },
-    });
-
-    if (!article) {
-      throw AppError.notFound('Article not found');
-    }
-
-    if (article.status !== ArticleStatus.PUBLISHED) {
-      throw AppError.forbidden('Cannot add opinions to unpublished articles');
-    }
-
-    return article;
-  }
-
-  private async getOpinionWithArticle(opinionId: string) {
-    const opinion = await prisma.opinion.findUnique({
-      where: { id: opinionId },
-      include: {
-        article: {
-          select: { id: true, authorId: true },
-        },
-      },
-    });
-
-    if (!opinion) {
-      throw AppError.notFound('Opinion not found');
-    }
-
-    if (opinion.removedAt) {
-      throw AppError.notFound('Opinion has been removed');
-    }
-
-    return opinion;
-  }
-
-  private async getActiveOpinion(opinionId: string) {
-    const opinion = await prisma.opinion.findUnique({
-      where: { id: opinionId },
-      select: { id: true, likeCount: true, removedAt: true },
-    });
-
-    if (!opinion) {
-      throw AppError.notFound('Opinion not found');
-    }
-
-    if (opinion.removedAt) {
-      throw AppError.notFound('Opinion has been removed');
-    }
-
-    return opinion;
-  }
-
-  private canEdit(createdAt: Date): boolean {
-    const now = Date.now();
-    const created = createdAt.getTime();
-    return now - created <= OPINION_EDIT_WINDOW_MS;
-  }
-
-  private mapToOpinionDTO(
-    opinion: any,
-    viewerId?: string,
-    articleAuthorId?: string
-  ): OpinionDTO {
-    const isAuthor = viewerId === opinion.authorId;
-    const isArticleAuthor = viewerId === articleAuthorId;
-    const canEdit = isAuthor && this.canEdit(opinion.createdAt);
-    const canReply = isArticleAuthor && !opinion.reply;
+  } else {
+    // Like
+    const [, updated] = await prisma.$transaction([
+      prisma.opinionLike.create({
+        data: { userId, opinionId },
+      }),
+      prisma.opinion.update({
+        where: { id: opinionId },
+        data: { likeCount: { increment: 1 } },
+        select: { likeCount: true },
+      }),
+    ]);
 
     return {
-      id: opinion.id,
-      articleId: opinion.articleId,
-      author: {
-        id: opinion.author.id,
-        username: opinion.author.username,
-        displayName: opinion.author.profile?.displayName ?? null,
-        avatarUrl: opinion.author.profile?.avatarUrl ?? null,
-      },
-      bodyMarkdown: opinion.bodyMarkdown,
-      likeCount: opinion.likeCount,
-      viewerHasLiked: Array.isArray(opinion.likes) && opinion.likes.length > 0,
-      canEdit,
-      canReply,
-      removedAt: opinion.removedAt?.toISOString() ?? null,
-      createdAt: opinion.createdAt.toISOString(),
-      updatedAt: opinion.updatedAt.toISOString(),
-      reply: opinion.reply ? this.mapToReplyDTO(opinion.reply, viewerId) : null,
+      liked: true,
+      likeCount: updated.likeCount,
     };
-  }
-
-  private mapToReplyDTO(reply: any, viewerId?: string): OpinionReplyDTO {
-    const isReplier = viewerId === reply.replierId;
-    const canEdit = isReplier && this.canEdit(reply.createdAt);
-
-    return {
-      replier: {
-        id: reply.replier.id,
-        username: reply.replier.username,
-        displayName: reply.replier.profile?.displayName ?? null,
-        avatarUrl: reply.replier.profile?.avatarUrl ?? null,
-      },
-      bodyMarkdown: reply.bodyMarkdown,
-      createdAt: reply.createdAt.toISOString(),
-      updatedAt: reply.updatedAt.toISOString(),
-      canEdit,
-    };
-  }
-
-  private encodeCursor(opinion: any, sort: 'helpful' | 'new'): string {
-    const data = {
-      likeCount: opinion.likeCount,
-      createdAt: opinion.createdAt.toISOString(),
-    };
-    return Buffer.from(JSON.stringify(data)).toString('base64');
-  }
-
-  private decodeCursor(cursor: string): {
-    likeCount: number;
-    createdAt: string;
-  } {
-    const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-    return JSON.parse(decoded);
   }
 }
 
-// Singleton instance
-export const opinionService = new OpinionService();
+/**
+ * Create author reply
+ */
+export async function createReply(
+  opinionId: string,
+  replierId: string,
+  input: CreateReplyRequest
+): Promise<OpinionReplyDTO> {
+  const opinion = await prisma.opinion.findUnique({
+    where: { id: opinionId },
+    include: {
+      article: { select: { authorId: true } },
+      reply: true,
+    },
+  });
 
+  if (!opinion) {
+    throw AppError.notFound('Opinion not found');
+  }
+
+  // Check if replier is article author
+  if (opinion.article.authorId !== replierId) {
+    throw AppError.forbidden('Only the article author can reply');
+  }
+
+  // Check if reply already exists
+  if (opinion.reply) {
+    throw AppError.conflict('Reply already exists');
+  }
+
+  // Create reply
+  const reply = await prisma.opinionReply.create({
+    data: {
+      opinionId,
+      replierId,
+      bodyMarkdown: input.bodyMarkdown,
+    },
+    include: {
+      replier: {
+        include: {
+          profile: { select: { displayName: true, avatarUrl: true } },
+        },
+      },
+    },
+  });
+
+  return mapToReplyDTO(reply, replierId);
+}
+
+/**
+ * Update reply (within edit window)
+ */
+export async function updateReply(
+  opinionId: string,
+  replierId: string,
+  input: UpdateReplyRequest
+): Promise<OpinionReplyDTO> {
+  const reply = await prisma.opinionReply.findUnique({
+    where: { opinionId },
+  });
+
+  if (!reply) {
+    throw AppError.notFound('Reply not found');
+  }
+
+  if (reply.replierId !== replierId) {
+    throw AppError.forbidden('You can only edit your own replies');
+  }
+
+  // Check edit window (10 minutes)
+  const now = new Date();
+  const createdAt = reply.createdAt;
+  const editWindowEnd = new Date(createdAt.getTime() + OPINION_EDIT_WINDOW_MS);
+
+  if (now > editWindowEnd) {
+    throw AppError.forbidden('Edit window has expired (10 minutes)');
+  }
+
+  // Update reply
+  const updated = await prisma.opinionReply.update({
+    where: { opinionId },
+    data: { bodyMarkdown: input.bodyMarkdown },
+    include: {
+      replier: {
+        include: {
+          profile: { select: { displayName: true, avatarUrl: true } },
+        },
+      },
+    },
+  });
+
+  return mapToReplyDTO(updated, replierId);
+}
+
+// ═══════════════════════════════════════════════════════════
+// Helper Functions
+// ═══════════════════════════════════════════════════════════
+
+function mapToOpinionDTO(
+  opinion: {
+    id: string;
+    articleId: string;
+    bodyMarkdown: string;
+    likeCount: number;
+    removedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    author: {
+      id: string;
+      username: string;
+      profile: { displayName: string | null; avatarUrl: string | null } | null;
+    };
+    likes: { userId: string }[];
+    reply: {
+      opinionId: string;
+      bodyMarkdown: string;
+      createdAt: Date;
+      updatedAt: Date;
+      replier: {
+        id: string;
+        username: string;
+        profile: { displayName: string | null; avatarUrl: string | null } | null;
+      };
+    } | null;
+  },
+  viewerId: string | undefined,
+  articleAuthorId: string
+): OpinionDTO {
+  const now = new Date();
+  const createdAt = opinion.createdAt;
+  const editWindowEnd = new Date(createdAt.getTime() + OPINION_EDIT_WINDOW_MS);
+  const canEdit = opinion.author.id === viewerId && now <= editWindowEnd;
+
+  const reply = opinion.reply
+    ? mapToReplyDTO(opinion.reply, viewerId)
+    : null;
+
+  return {
+    id: opinion.id,
+    articleId: opinion.articleId,
+    author: {
+      id: opinion.author.id,
+      username: opinion.author.username,
+      displayName: opinion.author.profile?.displayName ?? null,
+      avatarUrl: opinion.author.profile?.avatarUrl ?? null,
+    },
+    bodyMarkdown: opinion.bodyMarkdown,
+    likeCount: opinion.likeCount,
+    viewerHasLiked: opinion.likes.length > 0,
+    canEdit,
+    canReply: articleAuthorId === viewerId && !reply,
+    removedAt: opinion.removedAt?.toISOString() ?? null,
+    createdAt: opinion.createdAt.toISOString(),
+    updatedAt: opinion.updatedAt.toISOString(),
+    reply,
+  };
+}
+
+function mapToReplyDTO(
+  reply: {
+    bodyMarkdown: string;
+    createdAt: Date;
+    updatedAt: Date;
+    replier: {
+      id: string;
+      username: string;
+      profile: { displayName: string | null; avatarUrl: string | null } | null;
+    };
+  },
+  viewerId: string | undefined
+): OpinionReplyDTO {
+  const now = new Date();
+  const createdAt = reply.createdAt;
+  const editWindowEnd = new Date(createdAt.getTime() + OPINION_EDIT_WINDOW_MS);
+  const canEdit = reply.replier.id === viewerId && now <= editWindowEnd;
+
+  return {
+    replier: {
+      id: reply.replier.id,
+      username: reply.replier.username,
+      displayName: reply.replier.profile?.displayName ?? null,
+      avatarUrl: reply.replier.profile?.avatarUrl ?? null,
+    },
+    bodyMarkdown: reply.bodyMarkdown,
+    createdAt: reply.createdAt.toISOString(),
+    updatedAt: reply.updatedAt.toISOString(),
+    canEdit,
+  };
+}

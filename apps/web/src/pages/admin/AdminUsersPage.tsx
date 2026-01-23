@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Search, UserX, UserCheck } from 'lucide-react';
+import { Search, UserX, UserCheck, Shield, ShieldOff } from 'lucide-react';
 
 import { adminUsersApi } from '../../api/admin.api';
+import { useAuth } from '../../contexts/AuthContext';
 import type { AdminUserDTO, RoleName } from '@emc3/shared';
 
 export function AdminUsersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { hasRole } = useAuth();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('query') || '');
   const [banModal, setBanModal] = useState<{ user: AdminUserDTO; reason: string } | null>(null);
+  const [roleModal, setRoleModal] = useState<{ user: AdminUserDTO; action: 'grant' | 'revoke'; role: RoleName } | null>(null);
+  
+  const isAdmin = hasRole('ADMIN');
 
   const page = parseInt(searchParams.get('page') || '1');
   const roleFilter = searchParams.get('role') as RoleName | undefined;
@@ -41,6 +46,15 @@ export function AdminUsersPage() {
     mutationFn: (id: string) => adminUsersApi.unban(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+  });
+
+  const roleMutation = useMutation({
+    mutationFn: ({ id, role, action }: { id: string; role: RoleName; action: 'grant' | 'revoke' }) =>
+      adminUsersApi.updateRole(id, role, action),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      setRoleModal(null);
     },
   });
 
@@ -154,19 +168,42 @@ export function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3 text-muted">{user.email}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      {user.roles.map((role) => (
-                        <span
-                          key={role}
-                          className={`px-2 py-0.5 text-xs rounded ${
-                            role === 'ADMIN'
-                              ? 'bg-accent/20 text-accent'
-                              : 'bg-warning/20 text-warning'
-                          }`}
-                        >
-                          {role}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        {user.roles.map((role) => (
+                          <span
+                            key={role}
+                            className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                              role === 'ADMIN'
+                                ? 'bg-accent/15 text-accent ring-1 ring-inset ring-accent/20'
+                                : 'bg-warn/15 text-warn ring-1 ring-inset ring-warn/20'
+                            }`}
+                          >
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                      {isAdmin && (
+                        <div className="flex gap-1">
+                          {user.roles.includes('REVIEWER') ? (
+                            <button
+                              onClick={() => setRoleModal({ user, action: 'revoke', role: 'REVIEWER' })}
+                              className="p-1 text-warn hover:bg-warn/10 rounded transition-colors"
+                              title="Moderatörlükten Al"
+                            >
+                              <ShieldOff size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setRoleModal({ user, action: 'grant', role: 'REVIEWER' })}
+                              className="p-1 text-accent hover:bg-accent/10 rounded transition-colors"
+                              title="Moderatör Yap"
+                            >
+                              <Shield size={16} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -234,7 +271,7 @@ export function AdminUsersPage() {
       {/* Ban Modal */}
       {banModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-md">
+          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-md shadow-lg">
             <h3 className="text-lg font-semibold text-text mb-4">
               Kullanıcıyı Banla
             </h3>
@@ -261,6 +298,63 @@ export function AdminUsersPage() {
                 className="px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 disabled:opacity-50 transition-colors"
               >
                 {banMutation.isPending ? 'İşleniyor...' : 'Banla'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role Modal */}
+      {roleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-md shadow-lg">
+            <h3 className="text-lg font-semibold text-text mb-4">
+              {roleModal.action === 'grant' ? 'Moderatör Rolü Ver' : 'Moderatör Rolünü Kaldır'}
+            </h3>
+            <p className="text-muted mb-4">
+              <span className="font-medium text-text">@{roleModal.user.username}</span> kullanıcısına{' '}
+              {roleModal.action === 'grant' 
+                ? 'moderatör (REVIEWER) rolü vermek'
+                : 'moderatör (REVIEWER) rolünü kaldırmak'
+              } üzeresiniz.
+            </p>
+            {roleModal.action === 'grant' && (
+              <div className="mb-4 p-3 bg-accent/5 border border-accent/20 rounded-lg">
+                <p className="text-sm text-text">
+                  Moderatör rolü verilen kullanıcılar:
+                </p>
+                <ul className="mt-2 text-sm text-muted list-disc list-inside space-y-1">
+                  <li>İnceleme kuyruğunu görüntüleyebilir</li>
+                  <li>Revision'lara feedback verebilir</li>
+                  <li>Revision'ları onaylayabilir</li>
+                  <li>Kullanıcıları banlayabilir/ban kaldırabilir</li>
+                </ul>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setRoleModal(null)}
+                className="px-4 py-2 text-muted hover:text-text transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => roleMutation.mutate({ 
+                  id: roleModal.user.id, 
+                  role: roleModal.role, 
+                  action: roleModal.action 
+                })}
+                disabled={roleMutation.isPending}
+                className={`px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors ${
+                  roleModal.action === 'grant' ? 'bg-accent' : 'bg-warn'
+                }`}
+              >
+                {roleMutation.isPending 
+                  ? 'İşleniyor...' 
+                  : roleModal.action === 'grant' 
+                    ? 'Moderatör Yap' 
+                    : 'Rolü Kaldır'
+                }
               </button>
             </div>
           </div>

@@ -14,60 +14,47 @@ import { mapToFeedItem } from './social.service.js';
 // ═══════════════════════════════════════════════════════════
 
 /**
- * Get global feed (all published articles)
+ * Get global feed (all published articles).
+ * Only includes articles with at least one REV_PUBLISHED revision (actually published).
+ * Excludes drafts and in-review articles.
  */
 export async function getGlobalFeed(
   params: GlobalFeedParams,
   viewerId?: string
 ): Promise<FeedResponse> {
-  const { query, category, sort = 'new', limit = 20, cursor } = params;
+  const { query, category, sort = 'new', limit = 20, cursor, authorUsername } = params;
 
-  // Build where clause
-  const where: Prisma.ArticleWhereInput = {
-    status: ArticleStatus.PUBLISHED,
-    // Exclude banned authors from feed
-    author: {
-      ban: null,
-    },
+  // Base: must have a published revision (excludes draft / in-review)
+  const revisionFilter: Prisma.RevisionWhereInput = {
+    status: 'REV_PUBLISHED',
   };
 
-  // Search in title/summary via published revision
   if (query) {
-    where.revisions = {
-      some: {
-        status: 'REV_PUBLISHED',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { summary: { contains: query, mode: 'insensitive' } },
-        ],
-      },
-    };
+    revisionFilter.OR = [
+      { title: { contains: query, mode: 'insensitive' } },
+      { summary: { contains: query, mode: 'insensitive' } },
+    ];
   }
 
-  // Category filter (includes descendants via closure table)
   if (category) {
     const categoryIds = await getCategoryWithDescendants(category);
     if (categoryIds.length > 0) {
-      where.revisions = {
-        some: {
-          status: 'REV_PUBLISHED',
-          categories: {
-            some: {
-              categoryId: { in: categoryIds },
-            },
-          },
-          ...(query
-            ? {
-                OR: [
-                  { title: { contains: query, mode: 'insensitive' } },
-                  { summary: { contains: query, mode: 'insensitive' } },
-                ],
-              }
-            : {}),
-        },
+      revisionFilter.categories = {
+        some: { categoryId: { in: categoryIds } },
       };
     }
   }
+
+  const authorFilter: Prisma.UserWhereInput = { ban: null };
+  if (authorUsername) {
+    authorFilter.username = authorUsername;
+  }
+
+  const where: Prisma.ArticleWhereInput = {
+    status: ArticleStatus.PUBLISHED,
+    author: authorFilter,
+    revisions: { some: revisionFilter },
+  };
 
   // Cursor handling for keyset pagination
   if (cursor) {
@@ -148,8 +135,15 @@ export async function getGlobalFeed(
     take: limit + 1,
   });
 
-  const hasMore = articles.length > limit;
-  const items = articles.slice(0, limit);
+  // Exclude any article without published revision or valid dates (belt-and-suspenders)
+  const valid = articles.filter(
+    (a) =>
+      a.revisions?.length > 0 &&
+      a.firstPublishedAt != null &&
+      a.lastPublishedAt != null
+  );
+  const hasMore = valid.length > limit;
+  const items = valid.slice(0, limit);
 
   return {
     items: items.map((article) => mapToFeedItem(article, viewerId)),
@@ -181,16 +175,13 @@ export async function getFollowingFeed(
     return { items: [], meta: { nextCursor: null, hasMore: false } };
   }
 
-  // Build where clause
   const where: Prisma.ArticleWhereInput = {
     status: ArticleStatus.PUBLISHED,
     authorId: { in: followedIds },
-    author: {
-      ban: null, // Exclude banned authors
-    },
+    author: { ban: null },
+    revisions: { some: { status: 'REV_PUBLISHED' } },
   };
 
-  // Cursor handling
   if (cursor) {
     const [timestamp, id] = decodeCursor(cursor);
     where.OR = [
@@ -236,8 +227,14 @@ export async function getFollowingFeed(
     take: limit + 1,
   });
 
-  const hasMore = articles.length > limit;
-  const items = articles.slice(0, limit);
+  const valid = articles.filter(
+    (a) =>
+      a.revisions?.length > 0 &&
+      a.firstPublishedAt != null &&
+      a.lastPublishedAt != null
+  );
+  const hasMore = valid.length > limit;
+  const items = valid.slice(0, limit);
 
   return {
     items: items.map((article) => mapToFeedItem(article, userId)),
@@ -320,16 +317,22 @@ export async function searchUsers(
 // HELPERS
 // ═══════════════════════════════════════════════════════════
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Get category and all its descendants using closure table
  */
 async function getCategoryWithDescendants(
   categorySlugOrId: string
 ): Promise<string[]> {
-  // Try to find by slug first, then by ID
+  const bySlug = { slug: categorySlugOrId };
+  const byId = UUID_REGEX.test(categorySlugOrId)
+    ? { id: categorySlugOrId }
+    : null;
   const category = await prisma.category.findFirst({
     where: {
-      OR: [{ slug: categorySlugOrId }, { id: categorySlugOrId }],
+      OR: byId ? [bySlug, byId] : [bySlug],
     },
   });
 

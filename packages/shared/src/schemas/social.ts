@@ -34,6 +34,7 @@ export const GlobalFeedQuerySchema = z.object({
   sort: z.enum(['new', 'popular']).default('new'),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().optional(),
+  authorUsername: z.string().min(1).max(100).optional(),
 });
 
 export const FollowingFeedQuerySchema = z.object({

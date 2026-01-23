@@ -12,6 +12,7 @@ export type AuditTargetType =
   | 'article'
   | 'revision'
   | 'opinion'
+  | 'opinion_reply'
   | 'category'
   | 'appeal';
 

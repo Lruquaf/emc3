@@ -1,160 +1,98 @@
 import { Router } from 'express';
-import {
-  listOpinions,
-  createOpinion,
-  updateOpinion,
-  removeOpinion,
-  likeOpinion,
-  unlikeOpinion,
-  createReply,
-  updateReply,
-} from '../controllers/opinion.controller.js';
-import { requireAuth, optionalAuth } from '../middlewares/requireAuth.js';
-import { requireReviewer } from '../middlewares/requireRole.js';
+
+import * as opinionController from '../controllers/opinion.controller.js';
+import { requireAuth } from '../middlewares/requireAuth.js';
 import { requireVerifiedEmail } from '../middlewares/requireVerifiedEmail.js';
 import { rejectBannedForWrites } from '../middlewares/rejectBannedForWrites.js';
-import { validate, validateQuery, validateParams } from '../middlewares/validate.js';
+import { validate, validateParams, validateQuery } from '../middlewares/validate.js';
 import {
+  articleIdParamSchema,
+  OpinionIdParamSchema,
   OpinionListQuerySchema,
   CreateOpinionSchema,
   UpdateOpinionSchema,
-  OpinionIdParamSchema,
-  ArticleOpinionsParamSchema,
-  RemoveOpinionSchema,
   CreateReplySchema,
   UpdateReplySchema,
 } from '@emc3/shared';
 
-// ═══════════════════════════════════════════════════════════
-// OPINION ROUTES - FAZ 6
-// ═══════════════════════════════════════════════════════════
-
-const router = Router();
+export const opinionRouter = Router();
 
 // ═══════════════════════════════════════════════════════════
-// ARTICLE OPINIONS ROUTES
-// Prefix: /api/v1/articles/:articleId/opinions
+// Public Routes
 // ═══════════════════════════════════════════════════════════
 
-/**
- * List opinions for an article (public, optional auth for viewer state)
- * GET /api/v1/articles/:articleId/opinions
- */
-router.get(
-  '/articles/:articleId/opinions',
-  optionalAuth,
-  validateParams(ArticleOpinionsParamSchema),
+// Get opinions for article
+opinionRouter.get(
+  '/articles/:id/opinions',
+  validateParams(articleIdParamSchema),
   validateQuery(OpinionListQuerySchema),
-  listOpinions
+  opinionController.getOpinions
 );
 
-/**
- * Create a new opinion
- * POST /api/v1/articles/:articleId/opinions
- */
-router.post(
-  '/articles/:articleId/opinions',
+// ═══════════════════════════════════════════════════════════
+// Protected Routes
+// ═══════════════════════════════════════════════════════════
+
+// Create opinion
+opinionRouter.post(
+  '/articles/:id/opinions',
   requireAuth,
   requireVerifiedEmail,
   rejectBannedForWrites,
-  validateParams(ArticleOpinionsParamSchema),
+  validateParams(articleIdParamSchema),
   validate(CreateOpinionSchema),
-  createOpinion
+  opinionController.createOpinion
 );
 
-// ═══════════════════════════════════════════════════════════
-// OPINION CRUD ROUTES
-// Prefix: /api/v1/opinions/:id
-// ═══════════════════════════════════════════════════════════
-
-/**
- * Update an opinion (10 minute window)
- * PUT /api/v1/opinions/:id
- */
-router.put(
+// Update opinion
+opinionRouter.put(
   '/opinions/:id',
   requireAuth,
   requireVerifiedEmail,
   rejectBannedForWrites,
   validateParams(OpinionIdParamSchema),
   validate(UpdateOpinionSchema),
-  updateOpinion
+  opinionController.updateOpinion
 );
 
-/**
- * Remove an opinion (soft delete - mod/admin only)
- * DELETE /api/v1/opinions/:id
- */
-router.delete(
-  '/opinions/:id',
-  requireAuth,
-  requireReviewer,
-  validateParams(OpinionIdParamSchema),
-  validate(RemoveOpinionSchema),
-  removeOpinion
-);
-
-// ═══════════════════════════════════════════════════════════
-// OPINION LIKE ROUTES
-// ═══════════════════════════════════════════════════════════
-
-/**
- * Like an opinion
- * POST /api/v1/opinions/:id/like
- */
-router.post(
+// Like opinion
+opinionRouter.post(
   '/opinions/:id/like',
   requireAuth,
   requireVerifiedEmail,
   rejectBannedForWrites,
   validateParams(OpinionIdParamSchema),
-  likeOpinion
+  opinionController.likeOpinion
 );
 
-/**
- * Unlike an opinion
- * DELETE /api/v1/opinions/:id/like
- */
-router.delete(
+// Unlike opinion
+opinionRouter.delete(
   '/opinions/:id/like',
   requireAuth,
   requireVerifiedEmail,
   rejectBannedForWrites,
   validateParams(OpinionIdParamSchema),
-  unlikeOpinion
+  opinionController.unlikeOpinion
 );
 
-// ═══════════════════════════════════════════════════════════
-// AUTHOR REPLY ROUTES
-// ═══════════════════════════════════════════════════════════
-
-/**
- * Create a reply to an opinion (article author only)
- * POST /api/v1/opinions/:id/reply
- */
-router.post(
+// Create reply
+opinionRouter.post(
   '/opinions/:id/reply',
   requireAuth,
   requireVerifiedEmail,
   rejectBannedForWrites,
   validateParams(OpinionIdParamSchema),
   validate(CreateReplySchema),
-  createReply
+  opinionController.createReply
 );
 
-/**
- * Update a reply (10 minute window)
- * PUT /api/v1/opinions/:id/reply
- */
-router.put(
+// Update reply
+opinionRouter.put(
   '/opinions/:id/reply',
   requireAuth,
   requireVerifiedEmail,
   rejectBannedForWrites,
   validateParams(OpinionIdParamSchema),
   validate(UpdateReplySchema),
-  updateReply
+  opinionController.updateReply
 );
-
-export { router as opinionRouter };
-

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Heart, Bookmark, Share2, Eye } from 'lucide-react';
+import { Share2, Eye } from 'lucide-react';
 
+import { LikeButton } from '../social/LikeButton';
+import { SaveButton } from '../social/SaveButton';
 import type { ArticleCountsDTO, ViewerInteractionDTO } from '@emc3/shared';
 
 interface ArticleActionsProps {
@@ -10,26 +11,10 @@ interface ArticleActionsProps {
 }
 
 export function ArticleActions({
+  articleId,
   counts,
   viewerInteraction,
 }: ArticleActionsProps) {
-  const [liked, setLiked] = useState(viewerInteraction?.hasLiked ?? false);
-  const [saved, setSaved] = useState(viewerInteraction?.hasSaved ?? false);
-  const [likeCount, setLikeCount] = useState(counts.likes);
-  const [saveCount, setSaveCount] = useState(counts.saves);
-
-  const handleLike = async () => {
-    // TODO: Implement like API call
-    setLiked(!liked);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-  };
-
-  const handleSave = async () => {
-    // TODO: Implement save API call
-    setSaved(!saved);
-    setSaveCount((prev) => (saved ? prev - 1 : prev + 1));
-  };
-
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -53,45 +38,32 @@ export function ArticleActions({
   };
 
   return (
-    <div className="flex items-center gap-6">
-      {/* Like */}
-      <button
-        onClick={handleLike}
-        className={`flex items-center gap-2 transition-colors ${
-          liked
-            ? 'text-rose-500'
-            : 'text-neutral-500 hover:text-rose-500 dark:text-neutral-400'
-        }`}
-      >
-        <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
-        <span className="text-sm font-medium">{formatCount(likeCount)}</span>
-      </button>
-
-      {/* Save */}
-      <button
-        onClick={handleSave}
-        className={`flex items-center gap-2 transition-colors ${
-          saved
-            ? 'text-emerald-500'
-            : 'text-neutral-500 hover:text-emerald-500 dark:text-neutral-400'
-        }`}
-      >
-        <Bookmark size={20} fill={saved ? 'currentColor' : 'none'} />
-        <span className="text-sm font-medium">{formatCount(saveCount)}</span>
-      </button>
-
-      {/* Views */}
-      <div className="flex items-center gap-2 text-neutral-400">
-        <Eye size={20} />
-        <span className="text-sm">{formatCount(counts.views)}</span>
+    <div className="flex items-center gap-4">
+      <LikeButton
+        articleId={articleId}
+        initialLiked={viewerInteraction?.hasLiked ?? false}
+        initialCount={counts.likes}
+        size="md"
+        showCount
+      />
+      <SaveButton
+        articleId={articleId}
+        initialSaved={viewerInteraction?.hasSaved ?? false}
+        initialCount={counts.saves}
+        size="md"
+        showCount
+      />
+      <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <Eye size={18} />
+        <span className="tabular-nums">{formatCount(counts.views)}</span>
       </div>
-
-      {/* Share */}
       <button
         onClick={handleShare}
-        className="flex items-center gap-2 text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+        className="ml-auto inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+        aria-label="Paylaş"
       >
-        <Share2 size={20} />
+        <Share2 size={18} />
+        Paylaş
       </button>
     </div>
   );

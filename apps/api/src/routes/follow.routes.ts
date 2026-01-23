@@ -15,6 +15,17 @@ import {
 export const followRouter = Router();
 
 // ═══════════════════════════════════════════════════════════
+// Profile (must be before /users/:username/followers|following)
+// ═══════════════════════════════════════════════════════════
+
+followRouter.get(
+  '/users/:username',
+  optionalAuth,
+  validateParams(UsernameParamSchema),
+  followController.getProfile
+);
+
+// ═══════════════════════════════════════════════════════════
 // Follow/Unfollow Routes
 // ═══════════════════════════════════════════════════════════
 

@@ -15,7 +15,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 
 const adminNavItems = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true, adminOnly: true },
   { to: '/admin/users', icon: Users, label: 'Kullanıcılar' },
   { to: '/admin/articles', icon: FileText, label: 'Makaleler' },
   { to: '/admin/reviews', icon: FileSearch, label: 'İnceleme Kuyruğu' },
@@ -41,9 +41,11 @@ export function AdminLayout() {
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-surface flex flex-col">
         <div className="p-4 border-b border-border">
-          <h1 className="text-lg font-bold text-text">Admin Panel</h1>
+          <h1 className="text-lg font-bold text-text">
+            {isAdmin ? 'Admin Panel' : 'Moderasyon Paneli'}
+          </h1>
           <p className="text-sm text-muted">
-            {isAdmin ? 'Administrator' : 'Reviewer'}
+            {isAdmin ? 'Administrator' : 'Moderatör'}
           </p>
           <p className="text-xs text-muted mt-1">@{user?.username}</p>
         </div>

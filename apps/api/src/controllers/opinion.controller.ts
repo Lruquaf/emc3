@@ -1,57 +1,58 @@
-import { Request, Response, NextFunction } from 'express';
-import { opinionService } from '../services/opinion.service.js';
+import type { Request, Response, NextFunction } from 'express';
+
+import * as opinionService from '../services/opinion.service.js';
 import type {
-  OpinionListParams,
   CreateOpinionRequest,
   UpdateOpinionRequest,
   CreateReplyRequest,
   UpdateReplyRequest,
+  OpinionListParams,
 } from '@emc3/shared';
 
 // ═══════════════════════════════════════════════════════════
-// OPINION CONTROLLER - FAZ 6
+// Public Endpoints
 // ═══════════════════════════════════════════════════════════
 
 /**
- * List opinions for an article
- * GET /api/v1/articles/:articleId/opinions
+ * GET /articles/:id/opinions
+ * Get opinions for an article
  */
-export async function listOpinions(
-  req: Request,
+export async function getOpinions(
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const articleId = req.params.articleId as string;
+    const { id: articleId } = req.params;
     const viewerId = req.user?.id;
-    const params = req.query as unknown as OpinionListParams;
+    const query = req.query as unknown as OpinionListParams;
 
-    const result = await opinionService.listOpinions(articleId, params, viewerId);
+    const result = await opinionService.getOpinions(articleId, viewerId, query);
     res.json(result);
   } catch (error) {
     next(error);
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// Protected Endpoints
+// ═══════════════════════════════════════════════════════════
+
 /**
- * Create a new opinion
- * POST /api/v1/articles/:articleId/opinions
+ * POST /articles/:id/opinions
+ * Create opinion
  */
 export async function createOpinion(
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const articleId = req.params.articleId as string;
+    const { id: articleId } = req.params;
     const authorId = req.user!.id;
-    const { bodyMarkdown } = req.body as CreateOpinionRequest;
+    const input = req.body as CreateOpinionRequest;
 
-    const result = await opinionService.createOpinion(
-      articleId,
-      authorId,
-      bodyMarkdown
-    );
+    const result = await opinionService.createOpinion(articleId, authorId, input);
     res.status(201).json(result);
   } catch (error) {
     next(error);
@@ -59,24 +60,20 @@ export async function createOpinion(
 }
 
 /**
- * Update an opinion (10 minute window)
- * PUT /api/v1/opinions/:id
+ * PUT /opinions/:id
+ * Update opinion
  */
 export async function updateOpinion(
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const opinionId = req.params.id as string;
-    const userId = req.user!.id;
-    const { bodyMarkdown } = req.body as UpdateOpinionRequest;
+    const { id: opinionId } = req.params;
+    const authorId = req.user!.id;
+    const input = req.body as UpdateOpinionRequest;
 
-    const result = await opinionService.updateOpinion(
-      opinionId,
-      userId,
-      bodyMarkdown
-    );
+    const result = await opinionService.updateOpinion(opinionId, authorId, input);
     res.json(result);
   } catch (error) {
     next(error);
@@ -84,40 +81,19 @@ export async function updateOpinion(
 }
 
 /**
- * Remove an opinion (soft delete - mod/admin only)
- * DELETE /api/v1/opinions/:id
- */
-export async function removeOpinion(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const opinionId = req.params.id as string;
-    const moderatorId = req.user!.id;
-    const { reason } = req.body;
-
-    await opinionService.removeOpinion(opinionId, moderatorId, reason);
-    res.status(204).send();
-  } catch (error) {
-    next(error);
-  }
-}
-
-/**
- * Like an opinion
- * POST /api/v1/opinions/:id/like
+ * POST /opinions/:id/like
+ * Like opinion
  */
 export async function likeOpinion(
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const opinionId = req.params.id as string;
+    const { id: opinionId } = req.params;
     const userId = req.user!.id;
 
-    const result = await opinionService.likeOpinion(opinionId, userId);
+    const result = await opinionService.toggleOpinionLike(opinionId, userId);
     res.json(result);
   } catch (error) {
     next(error);
@@ -125,19 +101,19 @@ export async function likeOpinion(
 }
 
 /**
- * Unlike an opinion
- * DELETE /api/v1/opinions/:id/like
+ * DELETE /opinions/:id/like
+ * Unlike opinion
  */
 export async function unlikeOpinion(
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const opinionId = req.params.id as string;
+    const { id: opinionId } = req.params;
     const userId = req.user!.id;
 
-    const result = await opinionService.unlikeOpinion(opinionId, userId);
+    const result = await opinionService.toggleOpinionLike(opinionId, userId);
     res.json(result);
   } catch (error) {
     next(error);
@@ -145,24 +121,20 @@ export async function unlikeOpinion(
 }
 
 /**
- * Create an author reply
- * POST /api/v1/opinions/:id/reply
+ * POST /opinions/:id/reply
+ * Create author reply
  */
 export async function createReply(
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const opinionId = req.params.id as string;
+    const { id: opinionId } = req.params;
     const replierId = req.user!.id;
-    const { bodyMarkdown } = req.body as CreateReplyRequest;
+    const input = req.body as CreateReplyRequest;
 
-    const result = await opinionService.createReply(
-      opinionId,
-      replierId,
-      bodyMarkdown
-    );
+    const result = await opinionService.createReply(opinionId, replierId, input);
     res.status(201).json(result);
   } catch (error) {
     next(error);
@@ -170,24 +142,20 @@ export async function createReply(
 }
 
 /**
- * Update an author reply (10 minute window)
- * PUT /api/v1/opinions/:id/reply
+ * PUT /opinions/:id/reply
+ * Update author reply
  */
 export async function updateReply(
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const opinionId = req.params.id as string;
+    const { id: opinionId } = req.params;
     const replierId = req.user!.id;
-    const { bodyMarkdown } = req.body as UpdateReplyRequest;
+    const input = req.body as UpdateReplyRequest;
 
-    const result = await opinionService.updateReply(
-      opinionId,
-      replierId,
-      bodyMarkdown
-    );
+    const result = await opinionService.updateReply(opinionId, replierId, input);
     res.json(result);
   } catch (error) {
     next(error);

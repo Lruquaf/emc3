@@ -88,9 +88,10 @@ export async function getGlobalFeed(
   
   if (params.query) searchParams.append('query', params.query);
   if (params.category) searchParams.append('category', params.category);
-  if (params.sort) searchParams.append('sort', params.sort);
+  if (params.sort) searchParams.append('sort', params.sort ?? 'new');
   searchParams.append('limit', (params.limit ?? 20).toString());
   if (params.cursor) searchParams.append('cursor', params.cursor);
+  if (params.authorUsername) searchParams.append('authorUsername', params.authorUsername);
   
   return apiClient.get(`/feed/global?${searchParams}`);
 }

@@ -13,17 +13,23 @@ import type {
 // useGlobalFeed Hook
 // ═══════════════════════════════════════════════════════════
 
+interface UseGlobalFeedOptions extends GlobalFeedParams {
+  enabled?: boolean;
+}
+
 /**
- * Hook for fetching global feed with infinite scrolling
+ * Hook for fetching global feed with infinite scrolling.
+ * Pass authorUsername to filter by user (e.g. profile article list).
  */
-export function useGlobalFeed(params: GlobalFeedParams = {}) {
-  const { query, category, sort = 'new', limit = 20 } = params;
+export function useGlobalFeed(params: UseGlobalFeedOptions = {}) {
+  const { enabled = true, ...rest } = params;
+  const { query, category, sort = 'new', limit = 20, authorUsername } = rest;
 
   return useInfiniteQuery({
-    queryKey: ['feed', 'global', { query, category, sort, limit }],
+    queryKey: ['feed', 'global', { query, category, sort, limit, authorUsername }],
     queryFn: async ({ pageParam }): Promise<FeedResponse> => {
       return getGlobalFeed({
-        ...params,
+        ...rest,
         cursor: pageParam,
       });
     },
@@ -31,6 +37,7 @@ export function useGlobalFeed(params: GlobalFeedParams = {}) {
     getNextPageParam: (lastPage) =>
       lastPage.meta.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
     staleTime: 1000 * 60, // 1 minute
+    enabled,
   });
 }
 

@@ -198,10 +198,8 @@ export async function getSavedArticles(
       }),
       article: {
         status: ArticleStatus.PUBLISHED,
-        // Exclude banned authors
-        author: {
-          ban: null,
-        },
+        revisions: { some: { status: 'REV_PUBLISHED' } },
+        author: { ban: null },
       },
     },
     include: {
@@ -240,8 +238,14 @@ export async function getSavedArticles(
     take: limit + 1,
   });
 
-  const hasMore = saves.length > limit;
-  const items = saves.slice(0, limit);
+  const valid = saves.filter(
+    (s) =>
+      s.article.revisions?.length > 0 &&
+      s.article.firstPublishedAt != null &&
+      s.article.lastPublishedAt != null
+  );
+  const hasMore = valid.length > limit;
+  const items = valid.slice(0, limit);
 
   return {
     items: items.map((save) => ({

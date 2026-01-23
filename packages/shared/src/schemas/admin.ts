@@ -68,6 +68,26 @@ export const removeArticleSchema = z.object({
 
 export type RemoveArticleInput = z.infer<typeof removeArticleSchema>;
 
+export const removeOpinionSchema = z.object({
+  reason: z
+    .string()
+    .min(10, 'Kaldırma sebebi en az 10 karakter olmalıdır')
+    .max(500, 'Kaldırma sebebi en fazla 500 karakter olabilir')
+    .trim(),
+});
+
+export type RemoveOpinionInput = z.infer<typeof removeOpinionSchema>;
+
+export const removeOpinionReplySchema = z.object({
+  reason: z
+    .string()
+    .min(10, 'Kaldırma sebebi en az 10 karakter olmalıdır')
+    .max(500, 'Kaldırma sebebi en fazla 500 karakter olabilir')
+    .trim(),
+});
+
+export type RemoveOpinionReplyInput = z.infer<typeof removeOpinionReplySchema>;
+
 export const adminArticleListQuerySchema = z.object({
   query: z.string().max(200).optional(),
   status: z.enum(['PUBLISHED', 'REMOVED']).optional(),
@@ -85,7 +105,7 @@ export type AdminArticleListQuery = z.infer<typeof adminArticleListQuerySchema>;
 export const auditLogListQuerySchema = z.object({
   action: z.string().optional(),
   targetType: z
-    .enum(['user', 'article', 'revision', 'opinion', 'category', 'appeal'])
+    .enum(['user', 'article', 'revision', 'opinion', 'opinion_reply', 'category', 'appeal'])
     .optional(),
   targetId: z.string().uuid().optional(),
   actorId: z.string().uuid().optional(),

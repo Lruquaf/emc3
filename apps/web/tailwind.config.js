@@ -15,6 +15,7 @@ export default {
         gold: 'var(--gold)',
         danger: 'var(--danger)',
         warn: 'var(--warn)',
+        success: 'var(--success)',
       },
       fontFamily: {
         serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],

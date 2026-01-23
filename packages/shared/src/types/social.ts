@@ -137,6 +137,7 @@ export interface GlobalFeedParams {
   sort?: FeedSortOption;
   limit?: number;
   cursor?: string;
+  authorUsername?: string; // filter by author (for profile article list)
 }
 
 export interface FollowingFeedParams {

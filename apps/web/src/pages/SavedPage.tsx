@@ -5,34 +5,7 @@ import { Bookmark } from 'lucide-react';
 import { useSavedArticles } from '../hooks/useSave';
 import { FeedCard } from '../components/social/FeedCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-
-/**
- * Format date as relative time
- */
-function formatRelativeDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    if (diffHours === 0) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes} dakika önce`;
-    }
-    return `${diffHours} saat önce`;
-  }
-
-  if (diffDays === 1) return 'Dün';
-  if (diffDays < 7) return `${diffDays} gün önce`;
-
-  return date.toLocaleDateString('tr-TR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
+import { formatRelativeDateSafe } from '../utils/date';
 
 function SavedContent() {
   const {
@@ -97,7 +70,7 @@ function SavedContent() {
         {savedItems.map((item) => (
           <div key={item.article.id}>
             <div className="mb-2 text-xs text-neutral-500">
-              {formatRelativeDate(item.savedAt)} kaydedildi
+              {formatRelativeDateSafe(item.savedAt)} kaydedildi
             </div>
             <FeedCard article={item.article} showInteractions />
           </div>

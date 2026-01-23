@@ -8,6 +8,7 @@ import { BibliographySection } from '../../components/article/BibliographySectio
 import { OpinionSection } from '../../components/opinion';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay';
+import { BackButton } from '../../components/ui/BackButton';
 
 export function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -36,12 +37,12 @@ export function ArticlePage() {
 
     if (errorCode === 'CONTENT_RESTRICTED') {
       return (
-        <div className="container py-12">
-          <div className="mx-auto max-w-2xl text-center">
-            <h1 className="mb-4 text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+        <div className="mx-auto max-w-3xl px-4 py-12">
+          <div className="rounded-xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
+            <h1 className="mb-4 text-2xl font-bold text-neutral-900">
               İçerik Erişime Kapalı
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <p className="text-neutral-600">
               Bu içerik şu anda görüntülenemiyor.
             </p>
           </div>
@@ -59,11 +60,17 @@ export function ArticlePage() {
   const { article, content, viewerInteraction } = articleData;
 
   return (
-    <article className="container py-8">
-      <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      {/* Back Button */}
+      <div className="mb-6">
+        <BackButton />
+      </div>
+
+      {/* Main Article Card */}
+      <article className="rounded-xl border border-neutral-200 bg-white p-8 shadow-sm">
         {/* Header */}
         <header className="mb-8">
-          <h1 className="mb-4 font-serif text-3xl font-bold leading-tight text-neutral-900 dark:text-neutral-100 sm:text-4xl">
+          <h1 className="mb-6 font-serif text-3xl font-bold leading-tight text-neutral-900 sm:text-4xl">
             {article.title}
           </h1>
 
@@ -78,7 +85,7 @@ export function ArticlePage() {
 
         {/* Summary */}
         {article.summary && (
-          <div className="mb-8 rounded-xl border-l-4 border-emerald-500 bg-emerald-50 p-4 text-lg italic text-neutral-700 dark:border-emerald-400 dark:bg-emerald-900/10 dark:text-neutral-300">
+          <div className="mb-8 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-5 text-lg italic leading-relaxed text-neutral-700">
             {article.summary}
           </div>
         )}
@@ -96,21 +103,23 @@ export function ArticlePage() {
         )}
 
         {/* Actions */}
-        <div className="border-t border-neutral-200 pt-8 dark:border-neutral-700">
+        <div className="border-t border-neutral-200 pt-6">
           <ArticleActions
             articleId={article.id}
             counts={article.counts}
             viewerInteraction={viewerInteraction}
           />
         </div>
+      </article>
 
-        {/* Opinions */}
+      {/* Opinions Section */}
+      <div className="mt-8">
         <OpinionSection
           articleId={article.id}
           articleAuthorId={article.author.id}
         />
       </div>
-    </article>
+    </div>
   );
 }
 

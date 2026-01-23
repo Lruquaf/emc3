@@ -1,52 +1,27 @@
 import { Link } from 'react-router-dom';
-import { Clock, RefreshCw } from 'lucide-react';
+import { Clock, RefreshCw, Edit2 } from 'lucide-react';
 
 import { LikeButton } from './LikeButton';
 import { SaveButton } from './SaveButton';
 import { ArticleStats } from './ArticleStats';
 import { CategoryBadge } from '../category/CategoryBadge';
 import { cn } from '../../utils/cn';
+import { formatRelativeDateSafe } from '../../utils/date';
 import type { FeedItemDTO } from '@emc3/shared';
 
 interface FeedCardProps {
   article: FeedItemDTO;
   showInteractions?: boolean;
+  showEditButton?: boolean;
+  onEdit?: () => void;
   className?: string;
-}
-
-/**
- * Format date as relative time or full date
- */
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    if (diffHours === 0) {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      return `${diffMinutes} dakika önce`;
-    }
-    return `${diffHours} saat önce`;
-  }
-
-  if (diffDays === 1) return 'Dün';
-  if (diffDays < 7) return `${diffDays} gün önce`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} hafta önce`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} ay önce`;
-
-  return date.toLocaleDateString('tr-TR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 }
 
 export function FeedCard({
   article,
   showInteractions = true,
+  showEditButton = false,
+  onEdit,
   className,
 }: FeedCardProps) {
   return (
@@ -59,7 +34,7 @@ export function FeedCard({
       {/* Author Header */}
       <div className="mb-4 flex items-center justify-between">
         <Link
-          to={`/@${article.author.username}`}
+          to={`/user/${article.author.username}`}
           className="flex items-center gap-3 hover:opacity-80"
         >
           {/* Avatar */}
@@ -89,7 +64,7 @@ export function FeedCard({
             </div>
             <div className="flex items-center gap-2 text-sm text-neutral-500">
               <Clock size={14} />
-              <span>{formatDate(article.firstPublishedAt)}</span>
+              <span>{formatRelativeDateSafe(article.firstPublishedAt)}</span>
               {article.isUpdated && (
                 <>
                   <RefreshCw size={14} className="ml-1" />
@@ -127,21 +102,35 @@ export function FeedCard({
       )}
 
       {/* Interactions */}
-      {showInteractions && (
-        <div className="flex items-center gap-3 border-t border-neutral-100 pt-4">
-          <LikeButton
-            articleId={article.id}
-            initialLiked={article.viewerInteraction?.hasLiked ?? false}
-            initialCount={article.counts.likes}
-            size="sm"
-          />
-          <SaveButton
-            articleId={article.id}
-            initialSaved={article.viewerInteraction?.hasSaved ?? false}
-            initialCount={article.counts.saves}
-            size="sm"
-            variant="minimal"
-          />
+      {(showInteractions || showEditButton) && (
+        <div className="flex items-center justify-between border-t border-neutral-100 pt-4">
+          {showInteractions && (
+            <div className="flex items-center gap-3">
+              <LikeButton
+                articleId={article.id}
+                initialLiked={article.viewerInteraction?.hasLiked ?? false}
+                initialCount={article.counts.likes}
+                size="sm"
+              />
+              <SaveButton
+                articleId={article.id}
+                initialSaved={article.viewerInteraction?.hasSaved ?? false}
+                initialCount={article.counts.saves}
+                size="sm"
+                variant="minimal"
+              />
+            </div>
+          )}
+          {showEditButton && onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
+            >
+              <Edit2 size={14} />
+              Düzenle
+            </button>
+          )}
         </div>
       )}
     </article>

@@ -78,3 +78,62 @@ export const resetPasswordSchema = z.object({
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
+/**
+ * Update profile schema (displayName, about, avatarUrl)
+ */
+export const updateProfileSchema = z.object({
+  displayName: z
+    .string()
+    .max(100, 'Görünen ad en fazla 100 karakter olabilir')
+    .optional()
+    .nullable(),
+  about: z
+    .string()
+    .max(500, 'Hakkında en fazla 500 karakter olabilir')
+    .optional()
+    .nullable(),
+  avatarUrl: z
+    .preprocess(
+      (v) => (v === '' ? null : v),
+      z.union([
+        z.string().url('Geçerli bir URL giriniz').max(2000),
+        z.null(),
+      ]).optional()
+    ),
+  socialLinks: z
+    .record(z.string().url('Geçerli bir URL giriniz').max(2000).or(z.literal('')))
+    .optional()
+    .nullable(),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+/**
+ * Change password schema
+ */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Mevcut şifre gerekli'),
+  newPassword: z
+    .string()
+    .min(8, 'Şifre en az 8 karakter olmalı')
+    .max(100)
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'Şifre en az bir büyük harf, bir küçük harf ve bir rakam içermeli'
+    ),
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+/**
+ * Deactivate account schema
+ */
+export const deactivateAccountSchema = z.object({
+  password: z.string().min(1, 'Şifre gerekli'),
+  confirm: z.literal(true, {
+    errorMap: () => ({ message: 'Hesabı dondurmayı onaylamalısınız' }),
+  }),
+});
+
+export type DeactivateAccountInput = z.infer<typeof deactivateAccountSchema>;
+

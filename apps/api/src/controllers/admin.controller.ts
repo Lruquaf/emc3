@@ -443,3 +443,49 @@ export async function publishRevision(
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// Opinion Moderation
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * POST /admin/opinions/:id/remove
+ * Remove opinion
+ */
+export async function removeOpinion(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id: opinionId } = req.params;
+    const { reason } = req.body as { reason: string };
+    const actorId = req.user!.id;
+
+    await moderationService.removeOpinion(opinionId, actorId, reason);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /admin/opinions/:id/reply/remove
+ * Remove opinion reply
+ */
+export async function removeOpinionReply(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id: opinionId } = req.params;
+    const { reason } = req.body as { reason: string };
+    const actorId = req.user!.id;
+
+    await moderationService.removeOpinionReply(opinionId, actorId, reason);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+

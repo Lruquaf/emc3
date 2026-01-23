@@ -365,15 +365,17 @@ model OpinionLike {
 }
 
 model OpinionReply {
-  opinionId    String   @id @map("opinion_id") @db.Uuid
-  replierId    String   @map("replier_id") @db.Uuid
-  bodyMarkdown String   @map("body_markdown")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  opinionId    String    @id @map("opinion_id") @db.Uuid
+  replierId    String    @map("replier_id") @db.Uuid
+  bodyMarkdown String    @map("body_markdown")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  removedAt    DateTime? @map("removed_at")
 
   opinion Opinion @relation(fields: [opinionId], references: [id], onDelete: Cascade)
   replier User    @relation(fields: [replierId], references: [id], onDelete: Restrict)
 
+  @@index([removedAt])
   @@map("opinion_replies")
 }
 

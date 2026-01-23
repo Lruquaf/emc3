@@ -73,9 +73,15 @@ export function AdminCategoriesPage() {
       }
     }
 
-    // Sort by name
+    // Sort: system categories first, then by name
     const sortNodes = (nodes: (AdminCategoryDTO & { children: AdminCategoryDTO[] })[]) => {
-      nodes.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+      nodes.sort((a, b) => {
+        // System categories first
+        if (a.isSystem && !b.isSystem) return -1;
+        if (!a.isSystem && b.isSystem) return 1;
+        // Then by name
+        return a.name.localeCompare(b.name, 'tr');
+      });
       for (const node of nodes) {
         sortNodes(node.children as (AdminCategoryDTO & { children: AdminCategoryDTO[] })[]);
       }
@@ -95,48 +101,48 @@ export function AdminCategoriesPage() {
     return (
       <div key={category.id}>
         <div
-          className="group flex items-center border-b border-border px-4 py-3 transition-colors hover:bg-surface"
+          className="group grid grid-cols-[24px_1fr_80px_80px_120px] items-center border-b border-border px-4 py-3 transition-colors hover:bg-surface"
           style={{ paddingLeft: `${level * 24 + 16}px` }}
         >
           {/* Expand/collapse */}
-          {hasChildren ? (
-            <button
-              onClick={() => toggleExpanded(category.id)}
-              className="mr-2 rounded p-1 text-muted hover:bg-bg hover:text-text"
-            >
-              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </button>
-          ) : (
-            <span className="mr-2 w-6" />
-          )}
+          <div className="flex items-center justify-center">
+            {hasChildren ? (
+              <button
+                onClick={() => toggleExpanded(category.id)}
+                className="rounded p-1 text-muted hover:bg-bg hover:text-text"
+              >
+                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </button>
+            ) : null}
+          </div>
 
           {/* Name */}
-          <div className="flex-1">
+          <div className="min-w-0 pl-4">
             <div className="flex items-center gap-2">
-              <span className="font-medium">{category.name}</span>
+              <span className="font-medium truncate">{category.name}</span>
               {category.isSystem && (
-                <span className="rounded bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                <span className="rounded bg-accent/10 px-2 py-0.5 text-xs text-accent whitespace-nowrap flex-shrink-0">
                   Sistem
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted">{category.slug}</p>
+            <p className="text-xs text-muted truncate">{category.slug}</p>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-6 text-sm text-muted">
-            <div className="flex items-center gap-1" title="Alt kategoriler">
-              <Layers size={14} />
-              <span>{category.descendantCount}</span>
-            </div>
-            <div className="flex items-center gap-1" title="Revision sayısı">
-              <FileText size={14} />
-              <span>{category.revisionCount}</span>
-            </div>
+          {/* Stats - Alt kategoriler */}
+          <div className="flex items-center justify-center gap-1 text-sm text-muted" title="Alt kategoriler">
+            <Layers size={14} />
+            <span className="tabular-nums">{category.descendantCount}</span>
+          </div>
+
+          {/* Stats - Revision sayısı */}
+          <div className="flex items-center justify-center gap-1 text-sm text-muted" title="Revision sayısı">
+            <FileText size={14} />
+            <span className="tabular-nums">{category.revisionCount}</span>
           </div>
 
           {/* Actions */}
-          <div className="ml-4 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex items-center justify-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             {/* Add subcategory */}
             <button
               onClick={() => handleCreateClick(category.id)}
@@ -181,7 +187,7 @@ export function AdminCategoriesPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -221,11 +227,12 @@ export function AdminCategoriesPage() {
       ) : (
         <div className="overflow-hidden rounded-lg border border-border bg-bg">
           {/* Header row */}
-          <div className="flex items-center border-b border-border bg-surface px-4 py-2 text-sm font-medium text-muted">
-            <span className="flex-1 pl-8">Kategori</span>
-            <span className="w-20 text-center">Alt</span>
-            <span className="w-20 text-center">Yazı</span>
-            <span className="w-28 text-center">İşlemler</span>
+          <div className="grid grid-cols-[24px_1fr_80px_80px_120px] items-center border-b border-border bg-surface px-4 py-2 text-sm font-medium text-muted">
+            <span></span>
+            <span className="pl-4">Kategori</span>
+            <span className="text-center">Alt</span>
+            <span className="text-center">Yazı</span>
+            <span className="text-center">İşlemler</span>
           </div>
 
           {/* Tree */}

@@ -1,220 +1,147 @@
-import { useState, useCallback } from 'react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-import {
-  getOpinions,
-  createOpinion,
-  updateOpinion,
-  likeOpinion,
-  unlikeOpinion,
-  createReply,
-  updateReply,
-} from '../api/opinions.api';
-import { useAuth } from '../contexts/AuthContext';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { opinionsApi } from '../api/opinions.api';
 import type {
   OpinionListParams,
-  OpinionLikeToggleResponse,
-  OpinionDTO,
-  OpinionReplyDTO,
+  CreateOpinionRequest,
+  UpdateOpinionRequest,
+  CreateReplyRequest,
+  UpdateReplyRequest,
 } from '@emc3/shared';
 
 // ═══════════════════════════════════════════════════════════
-// useOpinions - List opinions with infinite scroll
+// Opinion Hooks
 // ═══════════════════════════════════════════════════════════
 
-interface UseOpinionsOptions {
-  articleId: string;
-  sort?: 'helpful' | 'new';
-  limit?: number;
-  enabled?: boolean;
-}
-
-export function useOpinions({
-  articleId,
-  sort = 'helpful',
-  limit = 10,
-  enabled = true,
-}: UseOpinionsOptions) {
-  return useInfiniteQuery({
-    queryKey: ['opinions', articleId, { sort, limit }],
-    queryFn: async ({ pageParam }) => {
-      const params: OpinionListParams = {
-        sort,
-        limit,
-        cursor: pageParam,
-      };
-      return getOpinions(articleId, params);
-    },
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      lastPage.meta.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
-    staleTime: 1000 * 60, // 1 minute
-    enabled,
+/**
+ * Get opinions for an article
+ */
+export function useOpinions(articleId: string, params?: OpinionListParams) {
+  return useQuery({
+    queryKey: ['opinions', articleId, params],
+    queryFn: () => opinionsApi.getOpinions(articleId, params),
   });
 }
 
-// ═══════════════════════════════════════════════════════════
-// useCreateOpinion
-// ═══════════════════════════════════════════════════════════
-
-export function useCreateOpinion(articleId: string) {
+/**
+ * Create opinion mutation
+ */
+export function useCreateOpinion() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (bodyMarkdown: string) =>
-      createOpinion(articleId, { bodyMarkdown }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['opinions', articleId],
-      });
+    mutationFn: ({ articleId, input }: { articleId: string; input: CreateOpinionRequest }) =>
+      opinionsApi.createOpinion(articleId, input),
+    onSuccess: (_, variables) => {
+      // Invalidate opinions list
+      queryClient.invalidateQueries({ queryKey: ['opinions', variables.articleId] });
     },
   });
 }
 
-// ═══════════════════════════════════════════════════════════
-// useUpdateOpinion
-// ═══════════════════════════════════════════════════════════
-
-export function useUpdateOpinion(articleId: string) {
+/**
+ * Update opinion mutation
+ */
+export function useUpdateOpinion() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      opinionId,
-      bodyMarkdown,
-    }: {
-      opinionId: string;
-      bodyMarkdown: string;
-    }) => updateOpinion(opinionId, { bodyMarkdown }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['opinions', articleId],
-      });
+    mutationFn: ({ opinionId, input }: { opinionId: string; input: UpdateOpinionRequest }) =>
+      opinionsApi.updateOpinion(opinionId, input),
+    onSuccess: (data) => {
+      // Invalidate opinions list for the article
+      queryClient.invalidateQueries({ queryKey: ['opinions', data.articleId] });
     },
   });
 }
 
-// ═══════════════════════════════════════════════════════════
-// useOpinionLike - Like/unlike with optimistic updates
-// ═══════════════════════════════════════════════════════════
+/**
+ * Like/unlike opinion mutation
+ */
+export function useToggleOpinionLike() {
+  const queryClient = useQueryClient();
 
-interface UseOpinionLikeOptions {
-  opinionId: string;
-  initialLiked: boolean;
-  initialCount: number;
+  return useMutation({
+    mutationFn: ({ opinionId, isLiked }: { opinionId: string; isLiked: boolean }) =>
+      isLiked ? opinionsApi.unlikeOpinion(opinionId) : opinionsApi.likeOpinion(opinionId),
+    onSuccess: (_, variables) => {
+      // Invalidate all opinion queries to update like counts
+      queryClient.invalidateQueries({ queryKey: ['opinions'] });
+    },
+  });
 }
 
+/**
+ * Create reply mutation
+ */
+export function useCreateReply() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ opinionId, input }: { opinionId: string; input: CreateReplyRequest }) =>
+      opinionsApi.createReply(opinionId, input),
+    onSuccess: () => {
+      // Invalidate all opinion queries
+      queryClient.invalidateQueries({ queryKey: ['opinions'] });
+    },
+  });
+}
+
+/**
+ * Update reply mutation
+ */
+export function useUpdateReply() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ opinionId, input }: { opinionId: string; input: UpdateReplyRequest }) =>
+      opinionsApi.updateReply(opinionId, input),
+    onSuccess: () => {
+      // Invalidate all opinion queries
+      queryClient.invalidateQueries({ queryKey: ['opinions'] });
+    },
+  });
+}
+
+/**
+ * Opinion like hook (for OpinionLikeButton)
+ */
 export function useOpinionLike({
   opinionId,
   initialLiked,
   initialCount,
-}: UseOpinionLikeOptions) {
-  const { user, isAuthenticated } = useAuth();
+}: {
+  opinionId: string;
+  initialLiked: boolean;
+  initialCount: number;
+}) {
+  const toggleMutation = useToggleOpinionLike();
+  const queryClient = useQueryClient();
 
-  const [optimisticLiked, setOptimisticLiked] = useState(initialLiked);
-  const [optimisticCount, setOptimisticCount] = useState(initialCount);
+  // Get current state from query cache
+  const queryData = queryClient.getQueriesData({ queryKey: ['opinions'] });
+  let liked = initialLiked;
+  let likeCount = initialCount;
 
-  const likeMutation = useMutation({
-    mutationFn: () => likeOpinion(opinionId),
-    onMutate: () => {
-      setOptimisticLiked(true);
-      setOptimisticCount((c) => c + 1);
-    },
-    onSuccess: (data: OpinionLikeToggleResponse) => {
-      setOptimisticLiked(data.liked);
-      setOptimisticCount(data.likeCount);
-    },
-    onError: () => {
-      setOptimisticLiked(initialLiked);
-      setOptimisticCount(initialCount);
-    },
-  });
-
-  const unlikeMutation = useMutation({
-    mutationFn: () => unlikeOpinion(opinionId),
-    onMutate: () => {
-      setOptimisticLiked(false);
-      setOptimisticCount((c) => Math.max(0, c - 1));
-    },
-    onSuccess: (data: OpinionLikeToggleResponse) => {
-      setOptimisticLiked(data.liked);
-      setOptimisticCount(data.likeCount);
-    },
-    onError: () => {
-      setOptimisticLiked(initialLiked);
-      setOptimisticCount(initialCount);
-    },
-  });
-
-  const toggle = useCallback(() => {
-    if (!isAuthenticated) {
-      console.warn('Login required to like');
-      return;
+  // Try to find current state from cache
+  for (const [, data] of queryData) {
+    if (data && typeof data === 'object' && 'items' in data) {
+      const opinion = (data as { items: Array<{ id: string; viewerHasLiked: boolean; likeCount: number }> }).items.find(
+        (op) => op.id === opinionId
+      );
+      if (opinion) {
+        liked = opinion.viewerHasLiked;
+        likeCount = opinion.likeCount;
+        break;
+      }
     }
-
-    if (!user?.emailVerified) {
-      console.warn('Email verification required to like');
-      return;
-    }
-
-    if (optimisticLiked) {
-      unlikeMutation.mutate();
-    } else {
-      likeMutation.mutate();
-    }
-  }, [isAuthenticated, user?.emailVerified, optimisticLiked, likeMutation, unlikeMutation]);
+  }
 
   return {
-    liked: optimisticLiked,
-    likeCount: optimisticCount,
-    toggle,
-    isLoading: likeMutation.isPending || unlikeMutation.isPending,
+    liked,
+    likeCount,
+    toggle: () => {
+      toggleMutation.mutate({ opinionId, isLiked: liked });
+    },
+    isLoading: toggleMutation.isPending,
   };
 }
-
-// ═══════════════════════════════════════════════════════════
-// useCreateReply
-// ═══════════════════════════════════════════════════════════
-
-export function useCreateReply(articleId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      opinionId,
-      bodyMarkdown,
-    }: {
-      opinionId: string;
-      bodyMarkdown: string;
-    }) => createReply(opinionId, { bodyMarkdown }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['opinions', articleId],
-      });
-    },
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-// useUpdateReply
-// ═══════════════════════════════════════════════════════════
-
-export function useUpdateReply(articleId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      opinionId,
-      bodyMarkdown,
-    }: {
-      opinionId: string;
-      bodyMarkdown: string;
-    }) => updateReply(opinionId, { bodyMarkdown }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['opinions', articleId],
-      });
-    },
-  });
-}
-

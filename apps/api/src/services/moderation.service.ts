@@ -406,7 +406,10 @@ export async function listArticles(
   const { query, status, authorId, page = 1, limit = 20 } = params;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.ArticleWhereInput = {};
+  const where: Prisma.ArticleWhereInput = {
+    // Only show articles that have been actually published (have a published revision)
+    publishedRevisionId: { not: null },
+  };
 
   if (query) {
     where.revisions = {
@@ -547,6 +550,109 @@ export async function restoreArticle(
 }
 
 // ═══════════════════════════════════════════════════════════
+// OPINION MODERATION
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Remove opinion (soft delete)
+ */
+export async function removeOpinion(
+  opinionId: string,
+  actorId: string,
+  reason: string
+): Promise<void> {
+  const opinion = await prisma.opinion.findUnique({
+    where: { id: opinionId },
+    include: {
+      author: true,
+      article: {
+        select: { id: true, slug: true },
+      },
+    },
+  });
+
+  if (!opinion) {
+    throw new NotFoundError('Opinion not found');
+  }
+
+  if (opinion.removedAt) {
+    throw new ConflictError('Opinion is already removed');
+  }
+
+  await prisma.opinion.update({
+    where: { id: opinionId },
+    data: { removedAt: new Date() },
+  });
+
+  // Audit log
+  await auditService.log({
+    actorId,
+    action: AUDIT_ACTIONS.OPINION_REMOVED,
+    targetType: 'opinion',
+    targetId: opinionId,
+    reason,
+    meta: {
+      articleId: opinion.articleId,
+      articleSlug: opinion.article.slug,
+      authorId: opinion.authorId,
+      authorUsername: opinion.author.username,
+    },
+  });
+}
+
+/**
+ * Remove opinion reply (soft delete)
+ */
+export async function removeOpinionReply(
+  opinionId: string,
+  actorId: string,
+  reason: string
+): Promise<void> {
+  const reply = await prisma.opinionReply.findUnique({
+    where: { opinionId },
+    include: {
+      replier: true,
+      opinion: {
+        include: {
+          article: {
+            select: { id: true, slug: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!reply) {
+    throw new NotFoundError('Opinion reply not found');
+  }
+
+  if (reply.removedAt) {
+    throw new ConflictError('Opinion reply is already removed');
+  }
+
+  await prisma.opinionReply.update({
+    where: { opinionId },
+    data: { removedAt: new Date() },
+  });
+
+  // Audit log
+  await auditService.log({
+    actorId,
+    action: AUDIT_ACTIONS.OPINION_REPLY_REMOVED,
+    targetType: 'opinion_reply',
+    targetId: opinionId,
+    reason,
+    meta: {
+      opinionId: reply.opinionId,
+      articleId: reply.opinion.articleId,
+      articleSlug: reply.opinion.article.slug,
+      replierId: reply.replierId,
+      replierUsername: reply.replier.username,
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════
 
@@ -586,7 +692,7 @@ function mapToAdminUserDTO(user: {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToAdminArticleDTO(article: any): AdminArticleDTO {
-  const publishedRevision = article.revisions[0];
+  const publishedRevision = article.revisions?.[0];
 
   return {
     id: article.id,
@@ -607,7 +713,7 @@ function mapToAdminArticleDTO(article: any): AdminArticleDTO {
       views: Number(article.viewCount),
       opinions: article._count.opinions,
     },
-    createdAt: article.createdAt.toISOString(),
-    updatedAt: article.updatedAt.toISOString(),
+    createdAt: article.createdAt?.toISOString() ?? new Date().toISOString(),
+    updatedAt: article.updatedAt?.toISOString() ?? new Date().toISOString(),
   };
 }

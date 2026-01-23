@@ -86,6 +86,32 @@ export const authApi = {
     return apiClient.get<UserResponse>('/auth/me');
   },
 
+  // Update profile (displayName, about, avatarUrl, socialLinks)
+  async updateProfile(data: {
+    displayName?: string | null;
+    about?: string | null;
+    avatarUrl?: string | null;
+    socialLinks?: Record<string, string> | null;
+  }): Promise<{ user: UserResponse }> {
+    return apiClient.patch<{ user: UserResponse }>('/me/profile', data);
+  },
+
+  // Change password
+  async changePassword(data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/me/change-password', data);
+  },
+
+  // Deactivate account
+  async deactivateAccount(data: {
+    password: string;
+    confirm: boolean;
+  }): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/me/deactivate', data);
+  },
+
   // Refresh token
   async refresh(): Promise<{ message: string }> {
     return apiClient.post<{ message: string }>('/auth/refresh');

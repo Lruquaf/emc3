@@ -29,9 +29,9 @@ export function SaveButton({
   });
 
   const sizeClasses = {
-    sm: 'h-8 w-8',
-    md: 'h-10 w-10',
-    lg: 'h-12 w-12',
+    sm: 'h-8',
+    md: 'h-10',
+    lg: 'h-12',
   };
 
   const iconSizes = {
@@ -75,7 +75,7 @@ export function SaveButton({
         saved
           ? 'border-amber-500 bg-amber-50 text-amber-600 hover:bg-amber-100'
           : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-amber-500',
-        showCount ? 'gap-2 px-3' : '',
+        showCount ? 'gap-2 px-3' : 'px-2',
         sizeClasses[size],
         className
       )}

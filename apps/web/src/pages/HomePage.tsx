@@ -1,16 +1,9 @@
-export function HomePage() {
-  return (
-    <div className="container py-12">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-accent">e=mc³</h1>
-        <p className="mt-4 text-lg text-muted">
-          Epistemik Metayöntem Cemiyeti
-        </p>
-        <p className="mt-2 text-muted">
-          İlmî içerik platformu - FAZ 0 tamamlandı ✅
-        </p>
-      </div>
-    </div>
-  );
-}
+import { Navigate } from 'react-router-dom';
 
+/**
+ * Anasayfa (/): Kullanıcıyı doğrudan Keşfet (global feed) sayfasına yönlendirir.
+ * replace ile history'de / kaydı bırakılmaz; geri tuşu /feed'den önceki sayfaya gider.
+ */
+export function HomePage() {
+  return <Navigate to="/feed" replace />;
+}

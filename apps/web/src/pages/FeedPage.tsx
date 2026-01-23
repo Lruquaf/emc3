@@ -24,6 +24,8 @@ export function FeedPage() {
     isFetchingNextPage,
     isLoading,
     isError,
+    error,
+    refetch,
   } = useGlobalFeed({
     query,
     category,
@@ -162,9 +164,26 @@ export function FeedPage() {
         </div>
       ) : isError ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center">
-          <p className="text-neutral-600">
-            Makaleler yüklenirken bir hata oluştu. Lütfen tekrar deneyin.
+          <h3 className="text-lg font-medium text-neutral-900">
+            Makaleler yüklenirken hata oluştu
+          </h3>
+          <p className="mt-2 text-neutral-600">
+            Bağlantı veya sunucu kaynaklı bir sorun olabilir. Lütfen tekrar deneyin.
           </p>
+          {import.meta.env.DEV && error && (
+            <p className="mt-2 text-left text-sm text-rose-600 font-mono max-w-xl mx-auto">
+              {typeof error === 'object' && 'message' in error
+                ? String((error as { message?: string }).message)
+                : String(error)}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+          >
+            Tekrar Dene
+          </button>
         </div>
       ) : articles.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center">
@@ -173,9 +192,13 @@ export function FeedPage() {
             Sonuç bulunamadı
           </h3>
           <p className="mt-2 text-neutral-600">
-            {query
-              ? `"${query}" için sonuç bulunamadı.`
-              : 'Bu kategoride henüz makale yok.'}
+            {query && category
+              ? `"${query}" için bu kategoride sonuç yok. Filtreleri değiştirmeyi deneyin.`
+              : query
+                ? `"${query}" için sonuç bulunamadı.`
+                : category
+                  ? 'Bu kategoride henüz makale yok.'
+                  : 'Henüz yayınlanmış makale bulunmuyor.'}
           </p>
         </div>
       ) : (
