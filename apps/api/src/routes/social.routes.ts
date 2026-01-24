@@ -66,4 +66,3 @@ socialRouter.get(
   validateQuery(SavedArticlesQuerySchema),
   socialController.getSavedArticles
 );
-

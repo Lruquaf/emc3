@@ -19,7 +19,7 @@ export function CategoryBadge({
   if (clickable) {
     return (
       <Link
-        to={`/?category=${slug}`}
+        to={`/feed?category=${slug}`}
         className={`${baseClasses} hover:bg-neutral-50 hover:text-neutral-900`}
       >
         {name}

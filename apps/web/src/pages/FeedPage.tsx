@@ -1,21 +1,37 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Clock, TrendingUp } from 'lucide-react';
+import { Search, Clock, TrendingUp, X } from 'lucide-react';
 
 import { useGlobalFeed } from '../hooks/useFeed';
 import { FeedCard } from '../components/social/FeedCard';
 import { CategoryFilter } from '../components/category/CategoryFilter';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useDebounce } from '../hooks/useDebounce';
 import { cn } from '../utils/cn';
 import type { FeedSortOption } from '@emc3/shared';
 
 export function FeedPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchInput, setSearchInput] = useState(searchParams.get('query') || '');
+  const debouncedSearchInput = useDebounce(searchInput, 500);
 
   const query = searchParams.get('query') || undefined;
   const category = searchParams.get('category') || undefined;
   const sort = (searchParams.get('sort') as FeedSortOption) || 'new';
+
+  // Update URL when debounced search input changes
+  useEffect(() => {
+    setSearchParams((prevParams) => {
+      const params = new URLSearchParams(prevParams);
+      const trimmedInput = debouncedSearchInput.trim();
+      if (trimmedInput) {
+        params.set('query', trimmedInput);
+      } else {
+        params.delete('query');
+      }
+      return params;
+    }, { replace: true });
+  }, [debouncedSearchInput, setSearchParams]);
 
   const {
     data,
@@ -56,13 +72,8 @@ export function FeedPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams(searchParams);
-    if (searchInput.trim()) {
-      params.set('query', searchInput.trim());
-    } else {
-      params.delete('query');
-    }
-    setSearchParams(params);
+    // Search is now handled automatically via debounce, but we keep this for Enter key support
+    // The debounced effect will handle the actual search
   };
 
   return (
@@ -78,23 +89,29 @@ export function FeedPage() {
       {/* Search & Filters */}
       <div className="mb-6 space-y-4">
         {/* Search */}
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <div className="relative flex-1">
+        <form onSubmit={handleSearch} className="relative">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
             <input
-              type="search"
+              type="text"
               placeholder="Başlık veya özet ara..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-10 pr-4 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              className="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-10 pr-10 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput('');
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+                aria-label="Aramayı temizle"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          <button
-            type="submit"
-            className="h-10 rounded-lg border border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-          >
-            Ara
-          </button>
         </form>
 
         {/* Filters Row */}
@@ -133,28 +150,6 @@ export function FeedPage() {
             </button>
           </div>
         </div>
-
-        {/* Active filters */}
-        {(query || category) && (
-          <div className="flex items-center gap-2">
-            {query && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
-                Arama: "{query}"
-                <button
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams);
-                    params.delete('query');
-                    setSearchParams(params);
-                    setSearchInput('');
-                  }}
-                  className="ml-1 hover:text-emerald-900"
-                >
-                  ×
-                </button>
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Content */}

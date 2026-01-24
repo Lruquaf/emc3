@@ -1,11 +1,14 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { opinionsApi } from '../api/opinions.api';
+import { useAuth } from '../contexts/AuthContext';
 import type {
   OpinionListParams,
   CreateOpinionRequest,
   UpdateOpinionRequest,
   CreateReplyRequest,
   UpdateReplyRequest,
+  OpinionLikeToggleResponse,
 } from '@emc3/shared';
 
 // ═══════════════════════════════════════════════════════════
@@ -104,6 +107,7 @@ export function useUpdateReply() {
 
 /**
  * Opinion like hook (for OpinionLikeButton)
+ * Uses optimistic updates like useLike hook
  */
 export function useOpinionLike({
   opinionId,
@@ -114,34 +118,145 @@ export function useOpinionLike({
   initialLiked: boolean;
   initialCount: number;
 }) {
-  const toggleMutation = useToggleOpinionLike();
   const queryClient = useQueryClient();
+  const { user, isAuthenticated } = useAuth();
 
-  // Get current state from query cache
-  const queryData = queryClient.getQueriesData({ queryKey: ['opinions'] });
-  let liked = initialLiked;
-  let likeCount = initialCount;
+  // Optimistic state
+  const [optimisticLiked, setOptimisticLiked] = useState(initialLiked);
+  const [optimisticCount, setOptimisticCount] = useState(initialCount);
 
-  // Try to find current state from cache
-  for (const [, data] of queryData) {
-    if (data && typeof data === 'object' && 'items' in data) {
-      const opinion = (data as { items: Array<{ id: string; viewerHasLiked: boolean; likeCount: number }> }).items.find(
-        (op) => op.id === opinionId
-      );
-      if (opinion) {
-        liked = opinion.viewerHasLiked;
-        likeCount = opinion.likeCount;
-        break;
-      }
+  // Track when a mutation just completed to prevent useEffect from overriding state
+  const lastMutationTimeRef = useRef<number | null>(null);
+  const isMountedRef = useRef(false);
+  // Keep refs to latest initial values for error rollback
+  const initialLikedRef = useRef(initialLiked);
+  const initialCountRef = useRef(initialCount);
+
+  // Update refs when initial values change
+  useEffect(() => {
+    initialLikedRef.current = initialLiked;
+    initialCountRef.current = initialCount;
+  }, [initialLiked, initialCount]);
+
+  const likeMutation = useMutation({
+    mutationFn: () => opinionsApi.likeOpinion(opinionId),
+    onMutate: () => {
+      // Optimistic update
+      setOptimisticLiked(true);
+      setOptimisticCount((c) => c + 1);
+    },
+    onSuccess: (data: OpinionLikeToggleResponse) => {
+      setOptimisticLiked(data.liked);
+      setOptimisticCount(data.likeCount);
+      // Mark mutation completion time
+      lastMutationTimeRef.current = Date.now();
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['opinions'] });
+    },
+    onError: () => {
+      // Rollback to latest initial values
+      setOptimisticLiked(initialLikedRef.current);
+      setOptimisticCount(initialCountRef.current);
+    },
+  });
+
+  const unlikeMutation = useMutation({
+    mutationFn: () => opinionsApi.unlikeOpinion(opinionId),
+    onMutate: () => {
+      setOptimisticLiked(false);
+      setOptimisticCount((c) => Math.max(0, c - 1));
+    },
+    onSuccess: (data: OpinionLikeToggleResponse) => {
+      setOptimisticLiked(data.liked);
+      setOptimisticCount(data.likeCount);
+      // Mark mutation completion time
+      lastMutationTimeRef.current = Date.now();
+      queryClient.invalidateQueries({ queryKey: ['opinions'] });
+    },
+    onError: () => {
+      // Rollback to latest initial values
+      setOptimisticLiked(initialLikedRef.current);
+      setOptimisticCount(initialCountRef.current);
+    },
+  });
+
+  // Initialize on mount
+  useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      setOptimisticLiked(initialLiked);
+      setOptimisticCount(initialCount);
+      return;
     }
-  }
+  }, []);
+
+  // Sync state with initial values when they change, but only if:
+  // 1. No mutation is pending
+  // 2. No mutation completed recently (within 1000ms) - this prevents override after query refetch
+  //    But if values match what we expect after mutation, allow sync earlier
+  useEffect(() => {
+    const isPending = likeMutation.isPending || unlikeMutation.isPending;
+    const timeSinceLastMutation = lastMutationTimeRef.current
+      ? Date.now() - lastMutationTimeRef.current
+      : Infinity;
+
+    // Don't sync if mutation is currently pending
+    if (isPending) {
+      return;
+    }
+
+    // If mutation just completed, wait a bit for query refetch to complete
+    // But if the new initial values match our optimistic state, sync immediately
+    if (timeSinceLastMutation < 1000) {
+      // Check if the new initial values match what we expect after mutation
+      // If they do, it means query refetch completed and we should sync
+      const expectedLiked = lastMutationTimeRef.current !== null 
+        ? optimisticLiked 
+        : initialLiked;
+      
+      if (initialLiked === expectedLiked && initialCount === optimisticCount) {
+        // Query refetch completed and values match, sync is safe
+        setOptimisticLiked(initialLiked);
+        setOptimisticCount(initialCount);
+      }
+      return;
+    }
+
+    // Always sync when initial values change (this handles page refresh and initial load)
+    setOptimisticLiked(initialLiked);
+    setOptimisticCount(initialCount);
+  }, [
+    initialLiked,
+    initialCount,
+    optimisticLiked,
+    optimisticCount,
+    likeMutation.isPending,
+    unlikeMutation.isPending,
+  ]);
+
+  const toggle = useCallback(() => {
+    if (!isAuthenticated) {
+      // Could show a toast or redirect to login
+      console.warn('Login required to like opinion');
+      return;
+    }
+
+    if (!user?.emailVerified) {
+      console.warn('Email verification required to like opinion');
+      return;
+    }
+
+    if (optimisticLiked) {
+      unlikeMutation.mutate();
+    } else {
+      likeMutation.mutate();
+    }
+  }, [isAuthenticated, user?.emailVerified, optimisticLiked, likeMutation, unlikeMutation]);
 
   return {
-    liked,
-    likeCount,
-    toggle: () => {
-      toggleMutation.mutate({ opinionId, isLiked: liked });
-    },
-    isLoading: toggleMutation.isPending,
+    liked: optimisticLiked,
+    likeCount: optimisticCount,
+    toggle,
+    isLoading: likeMutation.isPending || unlikeMutation.isPending,
   };
 }

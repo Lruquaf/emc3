@@ -45,8 +45,6 @@ export function OpinionCard({
     locale: tr,
   });
 
-  const wasEdited = opinion.createdAt !== opinion.updatedAt;
-
   const charCount = editContent.length;
   const isValidEdit =
     charCount >= OPINION_BODY_MIN_LENGTH && charCount <= OPINION_BODY_MAX_LENGTH;
@@ -112,12 +110,6 @@ export function OpinionCard({
               <span>@{opinion.author.username}</span>
               <span>·</span>
               <span>{timeAgo}</span>
-              {wasEdited && (
-                <>
-                  <span>·</span>
-                  <span className="text-neutral-400">(düzenlendi)</span>
-                </>
-              )}
             </div>
           </div>
         </Link>
@@ -196,6 +188,7 @@ export function OpinionCard({
       {/* Footer */}
       <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-4">
         <OpinionLikeButton
+          key={opinion.id}
           opinionId={opinion.id}
           initialLiked={opinion.viewerHasLiked}
           initialCount={opinion.likeCount}

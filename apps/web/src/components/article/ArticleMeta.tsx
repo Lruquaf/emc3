@@ -78,7 +78,7 @@ export function ArticleMeta({
           {categories.map((category) => (
             <Link
               key={category.id}
-              to={`/?category=${category.slug}`}
+              to={`/feed?category=${category.slug}`}
               className="rounded-lg border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
             >
               {category.name}

@@ -31,8 +31,6 @@ export function AuthorReply({ reply, opinionId, onUpdate, onRemove }: AuthorRepl
     locale: tr,
   });
 
-  const wasEdited = reply.createdAt !== reply.updatedAt;
-
   const charCount = editContent.length;
   const isValidEdit =
     charCount >= REPLY_BODY_MIN_LENGTH && charCount <= REPLY_BODY_MAX_LENGTH;
@@ -84,12 +82,6 @@ export function AuthorReply({ reply, opinionId, onUpdate, onRemove }: AuthorRepl
               <span>@{reply.replier.username}</span>
               <span>·</span>
               <span>{timeAgo}</span>
-              {wasEdited && (
-                <>
-                  <span>·</span>
-                  <span className="text-neutral-400">(düzenlendi)</span>
-                </>
-              )}
             </div>
           </div>
         </div>

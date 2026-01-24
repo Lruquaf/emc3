@@ -25,12 +25,12 @@ export function OpinionLikeButton({
       onClick={toggle}
       disabled={isLoading}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all',
+        'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
         'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
         'disabled:cursor-not-allowed disabled:opacity-50',
         liked
-          ? 'bg-rose-50 text-rose-600 hover:bg-rose-100'
-          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+          ? 'border-rose-500 bg-rose-50 text-rose-600 hover:bg-rose-100'
+          : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-rose-500'
       )}
       aria-label={liked ? 'Beğeniyi kaldır' : 'Beğen'}
       aria-pressed={liked}

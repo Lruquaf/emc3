@@ -1,3 +1,4 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import { UserPlus, UserMinus, Loader2 } from 'lucide-react';
 
 import { useFollow } from '../../hooks/useFollow';
@@ -23,7 +24,9 @@ export function FollowButton({
   showCount = false,
   className,
 }: FollowButtonProps) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { following, followerCount, toggle, isLoading } = useFollow({
     userId,
     initialFollowing,
@@ -35,6 +38,16 @@ export function FollowButton({
     return null;
   }
 
+  const handleClick = () => {
+    if (!isAuthenticated) {
+      // Redirect to login with returnUrl
+      const returnUrl = encodeURIComponent(location.pathname + location.search);
+      navigate(`/login?returnUrl=${returnUrl}`);
+      return;
+    }
+    toggle();
+  };
+
   const sizeClasses = {
     sm: 'h-8 px-3 text-sm',
     md: 'h-10 px-4 text-base',
@@ -43,7 +56,7 @@ export function FollowButton({
 
   return (
     <button
-      onClick={toggle}
+      onClick={handleClick}
       disabled={isLoading}
       className={cn(
         'inline-flex items-center gap-2 rounded-lg font-medium transition-all',

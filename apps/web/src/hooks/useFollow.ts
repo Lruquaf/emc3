@@ -77,11 +77,9 @@ export function useFollow({
   });
 
   const toggle = useCallback(() => {
-    if (!isAuthenticated) {
-      console.warn('Login required to follow');
-      return;
-    }
-
+    // Note: Authentication check is handled in FollowButton component
+    // This function assumes user is authenticated when called
+    
     if (!user?.emailVerified) {
       console.warn('Email verification required to follow');
       return;
@@ -99,7 +97,6 @@ export function useFollow({
       followMutation.mutate();
     }
   }, [
-    isAuthenticated,
     user?.emailVerified,
     user?.id,
     userId,

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, Trash2, RotateCcw, ExternalLink } from 'lucide-react';
+import { Search, Trash2, RotateCcw, ExternalLink, X } from 'lucide-react';
 
 import { adminArticlesApi } from '../../api/admin.api';
+import { useDebounce } from '../../hooks/useDebounce';
 import type { AdminArticleDTO } from '@emc3/shared';
 
 export function AdminArticlesPage() {
@@ -11,11 +12,23 @@ export function AdminArticlesPage() {
   const queryClient = useQueryClient();
   const queryFromUrl = searchParams.get('query') || '';
   const [searchInput, setSearchInput] = useState(queryFromUrl);
+  const debouncedSearchInput = useDebounce(searchInput, 500);
   const [removeModal, setRemoveModal] = useState<{ article: AdminArticleDTO; reason: string } | null>(null);
 
+  // Update URL when debounced search input changes
   useEffect(() => {
-    setSearchInput(queryFromUrl);
-  }, [queryFromUrl]);
+    setSearchParams((prevParams) => {
+      const params = new URLSearchParams(prevParams);
+      const trimmedInput = debouncedSearchInput.trim();
+      if (trimmedInput) {
+        params.set('query', trimmedInput);
+      } else {
+        params.delete('query');
+      }
+      params.set('page', '1');
+      return params;
+    }, { replace: true });
+  }, [debouncedSearchInput, setSearchParams]);
 
   const page = parseInt(searchParams.get('page') || '1');
   const statusFilter = searchParams.get('status') as 'PUBLISHED' | 'REMOVED' | undefined;
@@ -49,15 +62,8 @@ export function AdminArticlesPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams(searchParams);
-    const q = searchInput.trim();
-    if (q) {
-      params.set('query', q);
-    } else {
-      params.delete('query');
-    }
-    params.set('page', '1');
-    setSearchParams(params);
+    // Search is now handled automatically via debounce, but we keep this for Enter key support
+    // The debounced effect will handle the actual search
   };
 
   const handleFilterChange = (key: string, value: string | null) => {
@@ -80,23 +86,29 @@ export function AdminArticlesPage() {
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-4">
-        <form onSubmit={handleSearch} className="flex flex-1 min-w-[200px] gap-2">
-          <div className="relative flex-1">
+        <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
             <input
-              type="search"
+              type="text"
               placeholder="Başlık veya özet ara..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full pl-10 pr-10 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
             />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput('');
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-full text-muted hover:text-text hover:bg-bg/50 transition-colors"
+                aria-label="Aramayı temizle"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
-          <button
-            type="submit"
-            className="rounded-lg border border-border bg-bg px-4 py-2 text-sm font-medium text-text hover:bg-border focus:outline-none focus:ring-2 focus:ring-accent"
-          >
-            Ara
-          </button>
         </form>
 
         <select

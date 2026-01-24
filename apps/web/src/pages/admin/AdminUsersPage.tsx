@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Search, UserX, UserCheck, Shield, ShieldOff } from 'lucide-react';
+import { Search, UserX, UserCheck, Shield, ShieldOff, X } from 'lucide-react';
 
 import { adminUsersApi } from '../../api/admin.api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDebounce } from '../../hooks/useDebounce';
 import type { AdminUserDTO, RoleName } from '@emc3/shared';
 
 export function AdminUsersPage() {
@@ -12,6 +13,7 @@ export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('query') || '');
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [banModal, setBanModal] = useState<{ user: AdminUserDTO; reason: string } | null>(null);
   const [roleModal, setRoleModal] = useState<{ user: AdminUserDTO; action: 'grant' | 'revoke'; role: RoleName } | null>(null);
   
@@ -21,11 +23,28 @@ export function AdminUsersPage() {
   const roleFilter = searchParams.get('role') as RoleName | undefined;
   const bannedFilter = searchParams.get('isBanned');
 
+  // Update URL when debounced search query changes
+  useEffect(() => {
+    setSearchParams((prevParams) => {
+      const params = new URLSearchParams(prevParams);
+      const trimmedQuery = debouncedSearchQuery.trim();
+      if (trimmedQuery) {
+        params.set('query', trimmedQuery);
+      } else {
+        params.delete('query');
+      }
+      params.set('page', '1');
+      return params;
+    }, { replace: true });
+  }, [debouncedSearchQuery, setSearchParams]);
+
+  const queryFromUrl = searchParams.get('query') || '';
+
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users', { query: searchQuery, role: roleFilter, isBanned: bannedFilter, page }],
+    queryKey: ['admin', 'users', { query: queryFromUrl, role: roleFilter, isBanned: bannedFilter, page }],
     queryFn: () =>
       adminUsersApi.list({
-        query: searchQuery || undefined,
+        query: queryFromUrl || undefined,
         role: roleFilter,
         isBanned: bannedFilter === 'true' ? true : bannedFilter === 'false' ? false : undefined,
         page,
@@ -60,14 +79,8 @@ export function AdminUsersPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams(searchParams);
-    if (searchQuery) {
-      params.set('query', searchQuery);
-    } else {
-      params.delete('query');
-    }
-    params.set('page', '1');
-    setSearchParams(params);
+    // Search is now handled automatically via debounce, but we keep this for Enter key support
+    // The debounced effect will handle the actual search
   };
 
   const handleFilterChange = (key: string, value: string | null) => {
@@ -94,12 +107,24 @@ export function AdminUsersPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
             <input
-              type="search"
+              type="text"
               placeholder="Kullanıcı adı veya email ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full pl-10 pr-10 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-full text-muted hover:text-text hover:bg-bg/50 transition-colors"
+                aria-label="Aramayı temizle"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </form>
 

@@ -34,7 +34,13 @@ export function LoginPage() {
 
     try {
       await login(data);
-      navigate('/');
+      // Redirect to returnUrl if provided, otherwise go to home
+      const returnUrl = searchParams.get('returnUrl');
+      if (returnUrl) {
+        navigate(decodeURIComponent(returnUrl));
+      } else {
+        navigate('/');
+      }
     } catch (err: unknown) {
       const error = err as { message?: string };
       setError(error.message || 'Giriş yapılamadı');
