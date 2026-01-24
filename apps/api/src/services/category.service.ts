@@ -451,11 +451,25 @@ export class CategoryService {
       }
     }
 
-    // Get current parent for audit log
-    const currentParent = await prisma.categoryClosure.findFirst({
+    // Get current parent and category info for audit log
+    const currentParentClosure = await prisma.categoryClosure.findFirst({
       where: { descendantId: id, depth: 1 },
-      select: { ancestorId: true },
+      include: {
+        ancestor: { select: { id: true, name: true, slug: true } },
+      },
     });
+
+    // Get new parent info if provided
+    let newParentInfo: { id: string; name: string; slug: string } | null = null;
+    if (newParentId) {
+      const newParent = await prisma.category.findUnique({
+        where: { id: newParentId },
+        select: { id: true, name: true, slug: true },
+      });
+      if (newParent) {
+        newParentInfo = newParent;
+      }
+    }
 
     // Transaction: update closure table
     await prisma.$transaction(async (tx) => {
@@ -501,8 +515,14 @@ export class CategoryService {
           targetType: 'category',
           targetId: id,
           meta: {
-            previousParentId: currentParent?.ancestorId ?? null,
-            newParentId,
+            categoryName: category.name,
+            categorySlug: category.slug,
+            previousParentId: currentParentClosure?.ancestorId ?? null,
+            previousParentName: currentParentClosure?.ancestor.name ?? null,
+            previousParentSlug: currentParentClosure?.ancestor.slug ?? null,
+            newParentId: newParentInfo?.id ?? null,
+            newParentName: newParentInfo?.name ?? null,
+            newParentSlug: newParentInfo?.slug ?? null,
           },
         },
       });

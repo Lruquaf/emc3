@@ -56,6 +56,13 @@ export const opinionsApi = {
   },
 
   /**
+   * Delete opinion
+   */
+  deleteOpinion: async (opinionId: string): Promise<void> => {
+    await apiClient.delete(`/opinions/${opinionId}`);
+  },
+
+  /**
    * Like opinion
    */
   likeOpinion: async (opinionId: string): Promise<OpinionLikeToggleResponse> => {

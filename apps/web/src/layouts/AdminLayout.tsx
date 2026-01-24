@@ -39,18 +39,18 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-surface flex flex-col">
-        <div className="p-4 border-b border-border">
-          <h1 className="text-lg font-bold text-text">
+      <aside className="w-52 h-screen sticky top-0 border-r border-border bg-surface flex flex-col">
+        <div className="p-3 border-b border-border">
+          <h1 className="text-base font-bold text-text">
             {isAdmin ? 'Admin Panel' : 'Moderasyon Paneli'}
           </h1>
-          <p className="text-sm text-muted">
+          <p className="text-xs text-muted">
             {isAdmin ? 'Administrator' : 'Moderatör'}
           </p>
           <p className="text-xs text-muted mt-1">@{user?.username}</p>
         </div>
 
-        <nav className="flex-1 mt-4">
+        <nav className="flex-1 mt-2 overflow-y-auto">
           {adminNavItems
             .filter((item) => !item.adminOnly || isAdmin)
             .map((item) => (
@@ -59,34 +59,34 @@ export function AdminLayout() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                  `flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                     isActive
                       ? 'border-r-2 border-accent bg-accent/5 text-accent'
                       : 'text-muted hover:bg-bg hover:text-text'
                   }`
                 }
               >
-                <item.icon size={18} />
-                {item.label}
+                <item.icon size={16} />
+                <span className="truncate">{item.label}</span>
               </NavLink>
             ))}
         </nav>
 
-        {/* Footer links */}
-        <div className="border-t border-border p-4 space-y-2">
+        {/* Footer links - Always at bottom */}
+        <div className="border-t border-border p-3 space-y-1.5 mt-auto">
           <NavLink
             to="/"
-            className="flex items-center gap-3 px-2 py-2 text-sm text-muted hover:text-text transition-colors rounded-lg hover:bg-bg"
+            className="flex items-center gap-2.5 px-2 py-2 text-sm text-muted hover:text-text transition-colors rounded-lg hover:bg-bg"
           >
-            <Home size={18} />
-            Siteye Dön
+            <Home size={16} />
+            <span className="truncate">Siteye Dön</span>
           </NavLink>
           <button
             onClick={() => logout()}
-            className="flex items-center gap-3 px-2 py-2 text-sm text-muted hover:text-danger transition-colors rounded-lg hover:bg-danger/5 w-full text-left"
+            className="flex items-center gap-2.5 px-2 py-2 text-sm text-muted hover:text-danger transition-colors rounded-lg hover:bg-danger/5 w-full text-left"
           >
-            <LogOut size={18} />
-            Çıkış Yap
+            <LogOut size={16} />
+            <span className="truncate">Çıkış Yap</span>
           </button>
         </div>
       </aside>

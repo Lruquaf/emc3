@@ -223,7 +223,7 @@ export async function submitToReview(
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
-      article: { select: { authorId: true } },
+      article: { select: { id: true, slug: true, authorId: true } },
     },
   });
 
@@ -256,6 +256,10 @@ export async function submitToReview(
         action: 'REV_SUBMITTED',
         targetType: 'revision',
         targetId: revisionId,
+        meta: {
+          articleId: revision.article.id,
+          articleSlug: revision.article.slug,
+        },
       },
     }),
   ]);
@@ -277,7 +281,7 @@ export async function withdrawFromReview(
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
-      article: { select: { authorId: true } },
+      article: { select: { id: true, slug: true, authorId: true } },
     },
   });
 
@@ -310,6 +314,10 @@ export async function withdrawFromReview(
         action: 'REV_WITHDRAWN',
         targetType: 'revision',
         targetId: revisionId,
+        meta: {
+          articleId: revision.article.id,
+          articleSlug: revision.article.slug,
+        },
       },
     }),
   ]);

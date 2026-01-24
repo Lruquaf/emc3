@@ -127,12 +127,22 @@ export async function createAppeal(
     where: { userId },
   });
 
+  // Get user info for audit log
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, username: true },
+  });
+
   // Audit log
   await auditService.log({
     actorId: userId,
     action: AUDIT_ACTIONS.APPEAL_OPENED,
     targetType: 'appeal',
     targetId: appeal.id,
+    meta: {
+      userId: user?.id,
+      username: user?.username,
+    },
   });
 
   return {
@@ -214,13 +224,23 @@ export async function sendMessage(
     data: { updatedAt: new Date() },
   });
 
+  // Get user info for audit log
+  const user = await prisma.user.findUnique({
+    where: { id: senderId },
+    select: { id: true, username: true },
+  });
+
   // Audit log
   await auditService.log({
     actorId: senderId,
     action: AUDIT_ACTIONS.APPEAL_MESSAGE,
     targetType: 'appeal',
     targetId: appealId,
-    meta: { isAdmin },
+    meta: {
+      isAdmin,
+      userId: user?.id,
+      username: user?.username,
+    },
   });
 
   return mapToMessageDTO(msg);
@@ -374,6 +394,12 @@ export async function closeAppeal(
     data: { status: 'CLOSED' },
   });
 
+  // Get user info for audit log
+  const user = await prisma.user.findUnique({
+    where: { id: appeal.userId },
+    select: { id: true, username: true },
+  });
+
   // If resolution is 'overturned', unban user
   if (resolution === 'overturned') {
     await prisma.userBan.update({
@@ -391,6 +417,9 @@ export async function closeAppeal(
       targetType: 'user',
       targetId: appeal.userId,
       reason: 'Appeal overturned',
+      meta: {
+        targetUsername: user?.username,
+      },
     });
   }
 
@@ -400,7 +429,11 @@ export async function closeAppeal(
     action: AUDIT_ACTIONS.APPEAL_CLOSED,
     targetType: 'appeal',
     targetId: appealId,
-    meta: { resolution },
+    meta: {
+      resolution,
+      userId: user?.id,
+      username: user?.username,
+    },
   });
 }
 

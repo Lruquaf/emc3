@@ -227,7 +227,9 @@ export async function giveFeedback(
 ): Promise<ReviewActionResponse> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
-    select: { status: true, articleId: true },
+    include: {
+      article: { select: { id: true, slug: true } },
+    },
   });
 
   if (!revision) {
@@ -267,7 +269,8 @@ export async function giveFeedback(
         targetType: 'revision',
         targetId: revisionId,
         meta: {
-          articleId: revision.articleId,
+          articleId: revision.article.id,
+          articleSlug: revision.article.slug,
           feedbackLength: feedbackText.length,
         },
       },
@@ -294,7 +297,9 @@ export async function approveRevision(
 ): Promise<ReviewActionResponse> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
-    select: { status: true, articleId: true },
+    include: {
+      article: { select: { id: true, slug: true } },
+    },
   });
 
   if (!revision) {
@@ -334,7 +339,8 @@ export async function approveRevision(
         targetType: 'revision',
         targetId: revisionId,
         meta: {
-          articleId: revision.articleId,
+          articleId: revision.article.id,
+          articleSlug: revision.article.slug,
         },
       },
     }),

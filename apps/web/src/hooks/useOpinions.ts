@@ -106,6 +106,21 @@ export function useUpdateReply() {
 }
 
 /**
+ * Delete opinion mutation (by author)
+ */
+export function useDeleteOpinion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (opinionId: string) => opinionsApi.deleteOpinion(opinionId),
+    onSuccess: () => {
+      // Invalidate all opinion queries
+      queryClient.invalidateQueries({ queryKey: ['opinions'] });
+    },
+  });
+}
+
+/**
  * Opinion like hook (for OpinionLikeButton)
  * Uses optimistic updates like useLike hook
  */

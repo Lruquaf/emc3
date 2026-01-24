@@ -173,8 +173,8 @@ export async function createOpinion(
           profile: { select: { displayName: true, avatarUrl: true } },
         },
       },
-      likes: false,
-      reply: null,
+      likes: { where: { userId: authorId } },
+      reply: true,
     },
   });
 
@@ -395,6 +395,53 @@ export async function updateReply(
   });
 
   return mapToReplyDTO(updated, replierId);
+}
+
+/**
+ * Delete opinion (soft delete by author)
+ * Also deletes the reply if it exists
+ */
+export async function deleteOpinion(
+  opinionId: string,
+  authorId: string
+): Promise<void> {
+  const opinion = await prisma.opinion.findUnique({
+    where: { id: opinionId },
+    include: {
+      reply: true,
+    },
+  });
+
+  if (!opinion) {
+    throw AppError.notFound('Opinion not found');
+  }
+
+  if (opinion.authorId !== authorId) {
+    throw AppError.forbidden('You can only delete your own opinions');
+  }
+
+  if (opinion.removedAt) {
+    throw AppError.conflict('Opinion is already deleted');
+  }
+
+  const now = new Date();
+
+  // Soft delete opinion and reply (if exists) in a transaction
+  await prisma.$transaction(async (tx) => {
+    // Soft delete opinion
+    await tx.opinion.update({
+      where: { id: opinionId },
+      data: { removedAt: now },
+    });
+
+    // Soft delete reply if it exists and is not already deleted
+    if (opinion.reply && !opinion.reply.removedAt) {
+      await tx.opinionReply.update({
+        where: { opinionId },
+        data: { removedAt: now },
+      });
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════

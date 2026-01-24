@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, X } from 'lucide-react';
 
 import { MarkdownPreview } from '../editor/MarkdownPreview';
 import { OpinionLikeButton } from './OpinionLikeButton';
@@ -10,6 +10,7 @@ import { AuthorReply } from './AuthorReply';
 import { AuthorReplyComposer } from './AuthorReplyComposer';
 import { RemoveOpinionDialog } from './RemoveOpinionDialog';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDeleteOpinion } from '../../hooks/useOpinions';
 import { cn } from '../../utils/cn';
 import type { OpinionDTO } from '@emc3/shared';
 import { OPINION_BODY_MIN_LENGTH, OPINION_BODY_MAX_LENGTH } from '@emc3/shared';
@@ -31,14 +32,18 @@ export function OpinionCard({
   onRemove,
   isHighlighted = false,
 }: OpinionCardProps) {
-  const { hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const isAdminOrModerator = hasRole('ADMIN') || hasRole('REVIEWER');
+  const isOwnOpinion = user?.id === opinion.author.id;
   
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [editContent, setEditContent] = useState(opinion.bodyMarkdown);
   const [isSaving, setIsSaving] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  const deleteOpinionMutation = useDeleteOpinion();
 
   const timeAgo = formatDistanceToNow(new Date(opinion.createdAt), {
     addSuffix: true,
@@ -68,6 +73,19 @@ export function OpinionCard({
   const handleReplySubmit = async (content: string) => {
     await onReply(content);
     setIsReplying(false);
+  };
+
+  const handleDeleteOwnOpinion = async () => {
+    try {
+      await deleteOpinionMutation.mutateAsync(opinion.id);
+      setShowDeleteConfirm(false);
+      if (onRemove) {
+        onRemove();
+      }
+    } catch (error) {
+      // Error will be handled by mutation
+      console.error('Failed to delete opinion:', error);
+    }
   };
 
   return (
@@ -127,8 +145,19 @@ export function OpinionCard({
             </button>
           )}
           
+          {/* Delete button (for own opinion) */}
+          {isOwnOpinion && !isEditing && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="rounded-lg p-2 text-neutral-400 hover:bg-rose-50 hover:text-rose-600"
+              title="Mütalaamı sil"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          
           {/* Remove button (only for admin/moderator) */}
-          {isAdminOrModerator && !isEditing && (
+          {isAdminOrModerator && !isOwnOpinion && !isEditing && (
             <button
               onClick={() => setShowRemoveDialog(true)}
               className="rounded-lg p-2 text-neutral-400 hover:bg-rose-50 hover:text-rose-600"
@@ -227,7 +256,7 @@ export function OpinionCard({
         </div>
       )}
 
-      {/* Remove Opinion Dialog */}
+      {/* Remove Opinion Dialog (Admin/Moderator) */}
       {showRemoveDialog && (
         <RemoveOpinionDialog
           opinionId={opinion.id}
@@ -239,6 +268,53 @@ export function OpinionCard({
             }
           }}
         />
+      )}
+
+      {/* Delete Confirm Dialog (Own Opinion) */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            {/* Header */}
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-neutral-900">Mütalaayı Sil</h2>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                disabled={deleteOpinionMutation.isPending}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Warning */}
+            <div className="mb-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-700">
+              <p className="mb-2 font-medium">⚠️ Dikkat!</p>
+              <p>
+                Mütalaanızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz. 
+                Mütalaanız silindiğinde, varsa yazar cevabı da otomatik olarak silinecektir.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleteOpinionMutation.isPending}
+                className="rounded-lg px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleDeleteOwnOpinion}
+                disabled={deleteOpinionMutation.isPending}
+                className="flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+                {deleteOpinionMutation.isPending ? 'Siliniyor...' : 'Sil'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

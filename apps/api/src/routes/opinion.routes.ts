@@ -55,6 +55,16 @@ opinionRouter.put(
   opinionController.updateOpinion
 );
 
+// Delete opinion
+opinionRouter.delete(
+  '/opinions/:id',
+  requireAuth,
+  requireVerifiedEmail,
+  rejectBannedForWrites,
+  validateParams(OpinionIdParamSchema),
+  opinionController.deleteOpinion
+);
+
 // Like opinion
 opinionRouter.post(
   '/opinions/:id/like',

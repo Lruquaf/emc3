@@ -161,3 +161,23 @@ export async function updateReply(
     next(error);
   }
 }
+
+/**
+ * DELETE /opinions/:id
+ * Delete opinion (by author)
+ */
+export async function deleteOpinion(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id: opinionId } = req.params;
+    const authorId = req.user!.id;
+
+    await opinionService.deleteOpinion(opinionId, authorId);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
