@@ -74,15 +74,35 @@ class ApiClient {
       config.body = JSON.stringify(body);
     }
 
-    let response = await fetch(url, config);
+    let response: Response;
+    try {
+      response = await fetch(url, config);
+    } catch (error) {
+      // Network error (CORS, connection refused, etc.)
+      const errorMessage = error instanceof Error ? error.message : 'Network error';
+      throw {
+        code: 'NETWORK_ERROR',
+        message: `Bağlantı hatası: ${errorMessage}. API sunucusunun çalıştığından emin olun.`,
+        details: { url, error: errorMessage },
+      } as ApiError;
+    }
 
     // Handle 401 - try to refresh token
     if (response.status === 401 && !path.includes('/auth/')) {
       try {
         await this.refreshToken();
-        response = await fetch(url, config);
+        try {
+          response = await fetch(url, config);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Network error';
+          throw {
+            code: 'NETWORK_ERROR',
+            message: `Bağlantı hatası: ${errorMessage}. API sunucusunun çalıştığından emin olun.`,
+            details: { url, error: errorMessage },
+          } as ApiError;
+        }
       } catch {
-        // Refresh failed, throw original error
+        // Refresh failed, continue with original response
       }
     }
 
@@ -98,10 +118,50 @@ class ApiClient {
       return undefined as T;
     }
 
-    const data = await response.json();
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType?.includes('application/json');
+    
+    let data: unknown;
+    try {
+      if (isJson) {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : null;
+      } else {
+        const text = await response.text();
+        // If not JSON and not ok, create error from text
+        if (!response.ok) {
+          throw {
+            code: 'HTTP_ERROR',
+            message: text || `HTTP ${response.status} ${response.statusText}`,
+            details: { status: response.status, statusText: response.statusText },
+          } as ApiError;
+        }
+        data = text;
+      }
+    } catch (error) {
+      // JSON parse error or other error
+      if (error && typeof error === 'object' && 'code' in error) {
+        throw error;
+      }
+      throw {
+        code: 'PARSE_ERROR',
+        message: `Yanıt işlenirken hata oluştu: ${response.status} ${response.statusText}`,
+        details: { status: response.status, statusText: response.statusText },
+      } as ApiError;
+    }
 
     if (!response.ok) {
-      throw data as ApiError;
+      // If data is already an ApiError, throw it
+      if (data && typeof data === 'object' && 'code' in data && 'message' in data) {
+        throw data as ApiError;
+      }
+      // Otherwise create a generic error
+      throw {
+        code: 'HTTP_ERROR',
+        message: typeof data === 'string' ? data : `HTTP ${response.status} ${response.statusText}`,
+        details: { status: response.status, statusText: response.statusText, data },
+      } as ApiError;
     }
 
     return data as T;

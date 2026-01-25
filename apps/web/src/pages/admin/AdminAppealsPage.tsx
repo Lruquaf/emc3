@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { MessageSquare, Send, X, Check } from 'lucide-react';
 
 import { adminAppealsApi, adminUsersApi } from '../../api/admin.api';
+import { Select } from '../../components/ui';
 import type { AppealDTO, AppealSummaryDTO } from '@emc3/shared';
 
 export function AdminAppealsPage() {
@@ -86,16 +87,18 @@ export function AdminAppealsPage() {
         {/* Appeal List */}
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           {/* Filters */}
-          <div className="p-4 border-b border-border">
-            <select
+          <div className="p-3 border-b border-border">
+            <Select
               value={statusFilter || ''}
-              onChange={(e) => handleFilterChange('status', e.target.value || null)}
-              className="px-3 py-1.5 bg-bg border border-border rounded-lg text-text text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-              <option value="">Tüm İtirazlar</option>
-              <option value="OPEN">Açık</option>
-              <option value="CLOSED">Kapalı</option>
-            </select>
+              onChange={(value) => handleFilterChange('status', value || null)}
+              placeholder="Tüm İtirazlar"
+              options={[
+                { value: '', label: 'Tüm İtirazlar' },
+                { value: 'OPEN', label: 'Açık' },
+                { value: 'CLOSED', label: 'Kapalı' },
+              ]}
+              className="w-full"
+            />
           </div>
 
           {/* List */}

@@ -6,7 +6,7 @@ import { SaveButton } from './SaveButton';
 import { ArticleStats } from './ArticleStats';
 import { CategoryBadge } from '../category/CategoryBadge';
 import { cn } from '../../utils/cn';
-import { formatRelativeDateSafe } from '../../utils/date';
+import { formatHybridDateSafe } from '../../utils/date';
 import type { FeedItemDTO } from '@emc3/shared';
 
 interface FeedCardProps {
@@ -64,7 +64,7 @@ export function FeedCard({
             </div>
             <div className="flex items-center gap-2 text-sm text-neutral-500">
               <Clock size={14} />
-              <span>{formatRelativeDateSafe(article.firstPublishedAt)}</span>
+              <span>{formatHybridDateSafe(article.firstPublishedAt)}</span>
               {article.isUpdated && (
                 <>
                   <RefreshCw size={14} className="ml-1" />
@@ -80,7 +80,7 @@ export function FeedCard({
       </div>
 
       {/* Article Content */}
-      <Link to={`/article/${article.slug}`} className="block">
+      <Link to={`/article/${article.id}`} className="block">
         <h2 className="mb-2 text-xl font-bold text-neutral-900 hover:text-emerald-700">
           {article.title}
         </h2>

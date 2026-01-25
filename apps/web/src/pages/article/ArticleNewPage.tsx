@@ -5,15 +5,7 @@ import { Send, Save } from 'lucide-react';
 import { useCreateArticle } from '../../hooks/useArticle';
 import { EditorWithPreview } from '../../components/editor/EditorWithPreview';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-
-// TODO: Replace with actual categories API
-const MOCK_CATEGORIES = [
-  { id: '1', name: 'Fıkıh', slug: 'fikih' },
-  { id: '2', name: 'Hadis', slug: 'hadis' },
-  { id: '3', name: 'Tefsir', slug: 'tefsir' },
-  { id: '4', name: 'Akaid', slug: 'akaid' },
-  { id: '5', name: 'Siyer', slug: 'siyer' },
-];
+import { CategoryTreePicker } from '../../components/category/CategoryTreePicker';
 
 export function ArticleNewPage() {
   const navigate = useNavigate();
@@ -25,21 +17,11 @@ export function ArticleNewPage() {
   const [bibliography, setBibliography] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const toggleCategory = (categoryId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : prev.length < 5
-        ? [...prev, categoryId]
-        : prev
-    );
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedCategories.length === 0) {
-      alert('Lütfen en az bir kategori seçin');
+    // Validation is handled by isValid state and disabled button
+    if (!isValid) {
       return;
     }
 
@@ -116,28 +98,14 @@ export function ArticleNewPage() {
 
         {/* Categories */}
         <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <label className="mb-2 block text-sm font-medium text-neutral-700">
+          <div className="mb-2 block text-sm font-medium text-neutral-700">
             Kategoriler <span className="text-rose-500">*</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {MOCK_CATEGORIES.map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => toggleCategory(category.id)}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                  selectedCategories.includes(category.id)
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
           </div>
-          <p className="mt-2 text-xs text-neutral-500">
-            {selectedCategories.length}/5 kategori seçildi (min 1)
-          </p>
+          <CategoryTreePicker
+            selectedIds={selectedCategories}
+            onChange={setSelectedCategories}
+            maxSelections={5}
+          />
         </div>
 
         {/* Content */}

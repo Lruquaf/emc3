@@ -161,65 +161,65 @@ export function MainNavbar() {
 
                   {dropdownOpen && (
                     <div
-                      className="absolute right-0 mt-1 w-56 rounded-lg border border-border bg-surface py-1 shadow-lg"
+                      className="absolute right-0 mt-1 w-52 rounded-lg border border-border bg-surface py-1 shadow-lg"
                       role="menu"
                     >
                       <Link
                         to={user ? `/user/${user.username}` : '/feed'}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-border/50"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"
                         role="menuitem"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        <User className="h-4 w-4" />
-                        Profilim
+                        <User className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>Profilim</span>
                       </Link>
                       <Link
                         to="/me/profile"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-border/50"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"
                         role="menuitem"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        <Settings className="h-4 w-4" />
-                        Hesabım
+                        <Settings className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>Hesabım</span>
                       </Link>
                       <Link
                         to="/me/drafts"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-border/50"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"
                         role="menuitem"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        <FileEdit className="h-4 w-4" />
-                        Taslaklarım
+                        <FileEdit className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>Taslaklarım</span>
                       </Link>
                       <Link
                         to="/me/saved"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-border/50"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"
                         role="menuitem"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        <Bookmark className="h-4 w-4" />
-                        Kaydettiklerim
+                        <Bookmark className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>Kaydettiklerim</span>
                       </Link>
                       {hasModeratorAccess && (
                         <Link
                           to={getAdminPath()}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-text hover:bg-border/50"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"
                           role="menuitem"
                           onClick={() => setDropdownOpen(false)}
                         >
-                          <LayoutDashboard className="h-4 w-4" />
-                          {isAdmin ? 'Admin' : 'Moderasyon'}
+                          <LayoutDashboard className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>{isAdmin ? 'Admin' : 'Moderasyon'}</span>
                         </Link>
                       )}
                       <div className="my-1 border-t border-border" />
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-danger hover:bg-danger/5"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger transition-colors hover:bg-danger/5"
                         role="menuitem"
                       >
-                        <LogOut className="h-4 w-4" />
-                        Çıkış Yap
+                        <LogOut className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>Çıkış Yap</span>
                       </button>
                     </div>
                   )}

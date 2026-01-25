@@ -43,15 +43,15 @@ export function CategoryFilter({
           onSelect(node.slug);
           setIsOpen(false);
         }}
-        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent/10 ${
-          selectedSlug === node.slug ? 'bg-accent/10 text-accent' : 'text-text'
+        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
+          selectedSlug === node.slug
+            ? 'bg-accent/10 text-accent font-medium'
+            : 'text-text hover:bg-bg'
         }`}
-        style={{ paddingLeft: `${(level + 1) * 12}px` }}
+        style={{ paddingLeft: `${(level + 1) * 10}px` }}
       >
         {selectedSlug === node.slug && <Check size={14} className="flex-shrink-0" />}
-        <span className={selectedSlug === node.slug ? 'font-medium' : ''}>
-          {node.name}
-        </span>
+        <span className="truncate">{node.name}</span>
       </button>
       {node.children.map((child) => renderTreeItem(child, level + 1))}
     </div>
@@ -63,46 +63,51 @@ export function CategoryFilter({
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading}
-        className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm transition-colors hover:border-accent"
+        className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm transition-all hover:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <FolderTree size={16} className="text-muted" />
-        <span className={selectedCategory ? 'text-text' : 'text-muted'}>
+        <FolderTree size={14} className="flex-shrink-0 text-muted" />
+        <span
+          className={`truncate flex-1 min-w-0 text-left ${selectedCategory ? 'text-text' : 'text-muted'}`}
+        >
           {selectedCategory?.name || placeholder}
         </span>
+        {/* Clear button - inside button, before chevron */}
+        {selectedSlug && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(null);
+            }}
+            className="flex-shrink-0 rounded p-0.5 text-muted hover:bg-bg hover:text-text transition-colors"
+            aria-label="Kategoriyi temizle"
+            type="button"
+          >
+            <X size={12} />
+          </button>
+        )}
         <ChevronDown
-          size={16}
-          className={`ml-2 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          size={14}
+          className={`flex-shrink-0 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
-      {/* Clear button */}
-      {selectedSlug && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(null);
-          }}
-          className="absolute right-8 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:bg-bg hover:text-text"
-        >
-          <X size={14} />
-        </button>
-      )}
-
       {/* Dropdown */}
       {isOpen && data && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-80 w-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-1 w-64 max-h-64 overflow-y-auto rounded-lg border border-border bg-surface shadow-lg">
           {/* All categories option */}
           <button
             onClick={() => {
               onSelect(null);
               setIsOpen(false);
             }}
-            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent/10 ${
-              !selectedSlug ? 'bg-accent/10 text-accent' : 'text-text'
+            className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
+              !selectedSlug
+                ? 'bg-accent/10 text-accent font-medium'
+                : 'text-text hover:bg-bg'
             }`}
           >
-            {!selectedSlug && <Check size={14} />}
-            <span className={!selectedSlug ? 'font-medium' : ''}>{placeholder}</span>
+            {!selectedSlug && <Check size={14} className="flex-shrink-0" />}
+            <span className="truncate">{placeholder}</span>
           </button>
 
           <div className="border-t border-border" />

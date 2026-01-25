@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Shield, User, FileText, MessageSquare, FolderTree, AlertCircle } from 'lucide-react';
 
 import { adminAuditApi } from '../../api/admin.api';
+import { Select } from '../../components/ui';
 import type { AuditLogDTO } from '@emc3/shared';
 
 const ACTION_LABELS: Record<string, string> = {
@@ -11,6 +12,7 @@ const ACTION_LABELS: Record<string, string> = {
   USER_UNBANNED: 'Ban Kaldırıldı',
   USER_ROLE_ADDED: 'Rol Eklendi',
   USER_ROLE_REMOVED: 'Rol Kaldırıldı',
+  USER_RESTORED: 'Hesap Geri Yüklendi',
   ARTICLE_REMOVED: 'Makale Kaldırıldı',
   ARTICLE_RESTORED: 'Makale Geri Yüklendi',
   OPINION_REMOVED: 'Görüş Kaldırıldı',
@@ -83,35 +85,40 @@ export function AdminAuditPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-4">
-        <select
+      <div className="mb-6 flex flex-wrap gap-3">
+        <Select
           value={actionFilter || ''}
-          onChange={(e) => handleFilterChange('action', e.target.value || null)}
-          className="px-4 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-accent"
-        >
-          <option value="">Tüm İşlemler</option>
-          <option value="USER_BANNED">Kullanıcı Banları</option>
-          <option value="USER_UNBANNED">Ban Kaldırma</option>
-          <option value="ARTICLE_REMOVED">Makale Kaldırma</option>
-          <option value="ARTICLE_RESTORED">Makale Geri Yükleme</option>
-          <option value="REV_PUBLISHED">Yayınlama</option>
-          <option value="REV_APPROVED">Onaylama</option>
-          <option value="REV_FEEDBACK">Geri Bildirim</option>
-        </select>
+          onChange={(value) => handleFilterChange('action', value || null)}
+          placeholder="Tüm İşlemler"
+          options={[
+            { value: '', label: 'Tüm İşlemler' },
+            { value: 'USER_BANNED', label: 'Kullanıcı Banları' },
+            { value: 'USER_UNBANNED', label: 'Ban Kaldırma' },
+            { value: 'USER_RESTORED', label: 'Hesap Geri Yükleme' },
+            { value: 'ARTICLE_REMOVED', label: 'Makale Kaldırma' },
+            { value: 'ARTICLE_RESTORED', label: 'Makale Geri Yükleme' },
+            { value: 'REV_PUBLISHED', label: 'Yayınlama' },
+            { value: 'REV_APPROVED', label: 'Onaylama' },
+            { value: 'REV_FEEDBACK', label: 'Geri Bildirim' },
+          ]}
+          className="min-w-[180px]"
+        />
 
-        <select
+        <Select
           value={targetTypeFilter || ''}
-          onChange={(e) => handleFilterChange('targetType', e.target.value || null)}
-          className="px-4 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-accent"
-        >
-          <option value="">Tüm Hedefler</option>
-          <option value="user">Kullanıcı</option>
-          <option value="article">Makale</option>
-          <option value="revision">Revizyon</option>
-          <option value="opinion">Görüş</option>
-          <option value="appeal">İtiraz</option>
-          <option value="category">Kategori</option>
-        </select>
+          onChange={(value) => handleFilterChange('targetType', value || null)}
+          placeholder="Tüm Hedefler"
+          options={[
+            { value: '', label: 'Tüm Hedefler' },
+            { value: 'user', label: 'Kullanıcı' },
+            { value: 'article', label: 'Makale' },
+            { value: 'revision', label: 'Revizyon' },
+            { value: 'opinion', label: 'Görüş' },
+            { value: 'appeal', label: 'İtiraz' },
+            { value: 'category', label: 'Kategori' },
+          ]}
+          className="min-w-[160px]"
+        />
       </div>
 
       {/* Log List */}
@@ -221,6 +228,25 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
       </div>
     );
   }
+  // Restore specific info
+  if (log.action === 'USER_RESTORED') {
+    if (meta.newEmail) {
+      items.push(
+        <div key="newEmail">
+          <span className="text-text/70">Yeni Email:</span>{' '}
+          <span className="text-text font-medium">{meta.newEmail}</span>
+        </div>
+      );
+    }
+    if (meta.newUsername) {
+      items.push(
+        <div key="newUsername">
+          <span className="text-text/70">Yeni Kullanıcı Adı:</span>{' '}
+          <span className="text-text font-medium">@{meta.newUsername}</span>
+        </div>
+      );
+    }
+  }
   if (meta.role) {
     items.push(
       <div key="role">
@@ -231,11 +257,11 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
   }
 
   // Article actions
-  if (meta.articleSlug) {
+  if (meta.articleId) {
     items.push(
-      <div key="articleSlug">
-        <span className="text-text/70">Makale:</span>{' '}
-        <span className="text-text font-medium">{meta.articleSlug}</span>
+      <div key="articleId">
+        <span className="text-text/70">Makale ID:</span>{' '}
+        <span className="text-text font-medium">{meta.articleId}</span>
       </div>
     );
   }

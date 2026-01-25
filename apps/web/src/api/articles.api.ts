@@ -13,10 +13,10 @@ import type {
 
 export const articlesApi = {
   /**
-   * Get article by slug
+   * Get article by ID
    */
-  getBySlug: async (slug: string): Promise<ArticleReadDTO> => {
-    return apiClient.get(`/articles/${slug}`);
+  getById: async (articleId: string): Promise<ArticleReadDTO> => {
+    return apiClient.get(`/articles/${articleId}`);
   },
 
   /**

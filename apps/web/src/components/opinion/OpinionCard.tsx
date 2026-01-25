@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import { Pencil, Trash2, X } from 'lucide-react';
 
 import { MarkdownPreview } from '../editor/MarkdownPreview';
@@ -12,6 +10,7 @@ import { RemoveOpinionDialog } from './RemoveOpinionDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDeleteOpinion } from '../../hooks/useOpinions';
 import { cn } from '../../utils/cn';
+import { formatHybridDateSafe } from '../../utils/date';
 import type { OpinionDTO } from '@emc3/shared';
 import { OPINION_BODY_MIN_LENGTH, OPINION_BODY_MAX_LENGTH } from '@emc3/shared';
 
@@ -35,7 +34,8 @@ export function OpinionCard({
   const { user, hasRole } = useAuth();
   const isAdminOrModerator = hasRole('ADMIN') || hasRole('REVIEWER');
   const isOwnOpinion = user?.id === opinion.author.id;
-  
+  const isLikedByViewer = opinion.viewerHasLiked ?? false;
+
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [editContent, setEditContent] = useState(opinion.bodyMarkdown);
@@ -45,10 +45,7 @@ export function OpinionCard({
   
   const deleteOpinionMutation = useDeleteOpinion();
 
-  const timeAgo = formatDistanceToNow(new Date(opinion.createdAt), {
-    addSuffix: true,
-    locale: tr,
-  });
+  const timeAgo = formatHybridDateSafe(opinion.createdAt);
 
   const charCount = editContent.length;
   const isValidEdit =
@@ -94,7 +91,9 @@ export function OpinionCard({
         'rounded-lg border bg-white p-5',
         isHighlighted
           ? 'border-emerald-300 bg-emerald-50/30'
-          : 'border-neutral-200'
+          : isLikedByViewer
+            ? 'border-rose-200 bg-rose-50/30'
+            : 'border-neutral-200'
       )}
     >
       {/* Header */}

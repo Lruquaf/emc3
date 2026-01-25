@@ -39,8 +39,6 @@ export const MarkdownEditor = forwardRef<HTMLTextAreaElement, MarkdownEditorProp
           placeholder:text-neutral-400
           focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500
           disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:opacity-50
-          dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100
-          dark:placeholder:text-neutral-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-400
           ${className}
         `}
       />

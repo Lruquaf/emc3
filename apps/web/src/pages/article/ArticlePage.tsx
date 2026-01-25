@@ -1,4 +1,5 @@
 import { useParams, Navigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 import { useArticle } from '../../hooks/useArticle';
 import { ArticleContent } from '../../components/article/ArticleContent';
@@ -10,17 +11,31 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay';
 import { BackButton } from '../../components/ui/BackButton';
 
+const SITE_NAME = 'e=mc³';
+const OG_DESCRIPTION_MAX = 160;
+const DEFAULT_OG_IMAGE = 'https://placehold.co/1200x630/0d9488/ffffff?text=e%3Dmc%C2%B3';
+
+function truncateForMeta(text: string, max: number): string {
+  const plain = text.replace(/\s+/g, ' ').trim();
+  if (plain.length <= max) return plain;
+  return plain.slice(0, max - 3) + '...';
+}
+
+function getOgImage(): string {
+  return import.meta.env.VITE_OG_IMAGE ?? DEFAULT_OG_IMAGE;
+}
+
 export function ArticlePage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { id: articleId } = useParams<{ id: string }>();
 
   const {
     data: articleData,
     isLoading,
     error,
     refetch,
-  } = useArticle(slug!);
+  } = useArticle(articleId!);
 
-  if (!slug) {
+  if (!articleId) {
     return <Navigate to="/" replace />;
   }
 
@@ -59,8 +74,32 @@ export function ArticlePage() {
 
   const { article, content, viewerInteraction } = articleData;
 
+  const baseUrl = import.meta.env.VITE_APP_URL ?? (typeof window !== 'undefined' ? window.location.origin : '');
+  const canonicalUrl = `${baseUrl}/article/${article.id}`;
+  const ogTitle = `${article.title} | ${SITE_NAME}`;
+  const ogDescription = article.summary
+    ? truncateForMeta(article.summary, OG_DESCRIPTION_MAX)
+    : `${article.title} - ${SITE_NAME}`;
+  const ogImage = getOgImage();
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      <Helmet>
+        <title>{ogTitle}</title>
+        <meta name="description" content={ogDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={ogTitle} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={ogTitle} />
+        <meta name="twitter:description" content={ogDescription} />
+        <meta name="twitter:image" content={ogImage} />
+      </Helmet>
+
       {/* Back Button */}
       <div className="mb-6">
         <BackButton />

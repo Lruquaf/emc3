@@ -4,9 +4,11 @@ import { Plus, FileText, AlertCircle, Trash2, Edit2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useMyRevisions } from '../../hooks/useMyDrafts';
+import { useCreateRevision } from '../../hooks/useArticle';
 import { revisionsApi } from '../../api/revisions.api';
 import { RevisionStatus } from '../../components/revision/RevisionStatus';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { REVISION_STATUS_LABELS } from '@emc3/shared';
 import type { RevisionStatus as RevisionStatusType } from '@emc3/shared';
 import { cn } from '../../utils/cn';
@@ -30,7 +32,9 @@ export function MeDraftsPage() {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const createRevision = useCreateRevision();
 
   const {
     data,
@@ -61,10 +65,14 @@ export function MeDraftsPage() {
   const handleDelete = (revisionId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (window.confirm('Bu taslağı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
-      setDeletingId(revisionId);
-      deleteRevision.mutate(revisionId);
+    setShowDeleteDialog(revisionId);
+  };
+
+  const confirmDelete = () => {
+    if (showDeleteDialog) {
+      setDeletingId(showDeleteDialog);
+      deleteRevision.mutate(showDeleteDialog);
+      setShowDeleteDialog(null);
     }
   };
 
@@ -153,6 +161,14 @@ export function MeDraftsPage() {
             {allItems.map((revision) => {
               const canDelete = revision.status === 'REV_DRAFT';
               const isDeleting = deletingId === revision.id;
+              const isWithdrawn = revision.status === 'REV_WITHDRAWN';
+              const isCreatingDraft = createRevision.isPending;
+
+              const handleCreateNewDraft = (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                createRevision.mutate(revision.articleId);
+              };
 
               return (
                 <div
@@ -160,8 +176,9 @@ export function MeDraftsPage() {
                   className="group relative rounded-xl border border-neutral-200 bg-white p-6 transition-shadow hover:shadow-md"
                 >
                   <Link
-                    to={`/revision/${revision.id}/edit`}
+                    to={isWithdrawn ? '#' : `/revision/${revision.id}/edit`}
                     className="block"
+                    onClick={isWithdrawn ? (e) => e.preventDefault() : undefined}
                   >
                     <div className="mb-3 flex items-start justify-between gap-4">
                       <h3 className="text-lg font-semibold text-neutral-900">
@@ -177,6 +194,12 @@ export function MeDraftsPage() {
                       </div>
                     )}
 
+                    {isWithdrawn && (
+                      <div className="mb-3 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-600">
+                        Bu revizyon geri çekilmiş durumda. Düzenlemek için yeni bir taslak oluşturun.
+                      </div>
+                    )}
+
                     <div className="text-sm text-neutral-500">
                       Son güncelleme:{' '}
                       {new Date(revision.updatedAt).toLocaleDateString('tr-TR', {
@@ -189,13 +212,34 @@ export function MeDraftsPage() {
 
                   {/* Actions */}
                   <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-4">
-                    <Link
-                      to={`/revision/${revision.id}/edit`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
-                    >
-                      <Edit2 size={14} />
-                      Düzenle
-                    </Link>
+                    {isWithdrawn ? (
+                      <button
+                        type="button"
+                        onClick={handleCreateNewDraft}
+                        disabled={isCreatingDraft}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 disabled:opacity-50"
+                      >
+                        {isCreatingDraft ? (
+                          <>
+                            <LoadingSpinner size="sm" />
+                            <span>Oluşturuluyor...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileText size={14} />
+                            <span>Yeni Taslak Oluştur</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        to={`/revision/${revision.id}/edit`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
+                      >
+                        <Edit2 size={14} />
+                        Düzenle
+                      </Link>
+                    )}
 
                     {/* Delete Button - Only for drafts */}
                     {canDelete && (
@@ -246,6 +290,19 @@ export function MeDraftsPage() {
           )}
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog !== null}
+        onClose={() => setShowDeleteDialog(null)}
+        onConfirm={confirmDelete}
+        title="Taslağı Sil"
+        message="Bu taslağı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+        confirmText="Sil"
+        cancelText="İptal"
+        variant="danger"
+        isLoading={deletingId !== null && deleteRevision.isPending}
+      />
     </div>
   );
 }

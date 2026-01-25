@@ -1,9 +1,7 @@
 import { Link } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import { Clock, RefreshCw, User } from 'lucide-react';
 
-import { parseDateSafe } from '../../utils/date';
+import { formatHybridDateSafe } from '../../utils/date';
 import type { AuthorDTO, CategoryDTO } from '@emc3/shared';
 
 interface ArticleMetaProps {
@@ -21,10 +19,7 @@ export function ArticleMeta({
   isUpdated,
   hasPendingUpdate,
 }: ArticleMetaProps) {
-  const publishedDate = parseDateSafe(publishedAt);
-  const timeAgo = publishedDate
-    ? formatDistanceToNow(publishedDate, { addSuffix: true, locale: tr })
-    : null;
+  const timeAgo = formatHybridDateSafe(publishedAt);
 
   return (
     <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-500">
@@ -50,7 +45,7 @@ export function ArticleMeta({
       </Link>
 
       {/* Date */}
-      {timeAgo && (
+      {timeAgo !== '—' && (
         <div className="flex items-center gap-1.5">
           <Clock size={14} />
           <span>{timeAgo}</span>

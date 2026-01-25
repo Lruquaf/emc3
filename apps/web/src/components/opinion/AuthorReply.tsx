@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { MarkdownPreview } from '../editor/MarkdownPreview';
 import { RemoveOpinionDialog } from './RemoveOpinionDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../utils/cn';
+import { formatHybridDateSafe } from '../../utils/date';
 import type { OpinionReplyDTO } from '@emc3/shared';
 import { REPLY_BODY_MIN_LENGTH, REPLY_BODY_MAX_LENGTH } from '@emc3/shared';
 
@@ -26,10 +25,7 @@ export function AuthorReply({ reply, opinionId, onUpdate, onRemove }: AuthorRepl
   const [isSaving, setIsSaving] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
-  const timeAgo = formatDistanceToNow(new Date(reply.createdAt), {
-    addSuffix: true,
-    locale: tr,
-  });
+  const timeAgo = formatHybridDateSafe(reply.createdAt);
 
   const charCount = editContent.length;
   const isValidEdit =

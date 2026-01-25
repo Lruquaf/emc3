@@ -70,7 +70,7 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/feed" element={<FeedPage />} />
-            <Route path="/article/:slug" element={<ArticlePage />} />
+            <Route path="/article/:id" element={<ArticlePage />} />
             <Route path="/user/:username" element={<ProfilePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />

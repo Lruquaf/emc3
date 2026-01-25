@@ -6,8 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/api/auth.api';
 
 export function MeProfilePage() {
-  const { user, refreshUser } = useAuth();
-  const [activeSection, setActiveSection] = useState<'password' | 'deactivate' | null>(null);
+  const { user, refreshUser, logout } = useAuth();
+  const [activeSection, setActiveSection] = useState<'password' | 'delete' | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Password change state
@@ -16,10 +16,10 @@ export function MeProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Deactivate state
-  const [deactivatePassword, setDeactivatePassword] = useState('');
-  const [deactivateConfirm, setDeactivateConfirm] = useState(false);
-  const [isDeactivating, setIsDeactivating] = useState(false);
+  // Delete account state
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,37 +52,38 @@ export function MeProfilePage() {
     }
   };
 
-  const handleDeactivate = async (e: React.FormEvent) => {
+  const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
-    if (!deactivateConfirm) {
-      setMessage({ type: 'error', text: 'Hesabı dondurmayı onaylamalısınız.' });
+    if (!deleteConfirm) {
+      setMessage({ type: 'error', text: 'Hesabı silmeyi onaylamalısınız.' });
       return;
     }
 
-    setIsDeactivating(true);
+    setIsDeleting(true);
     try {
-      await authApi.deactivateAccount({
-        password: deactivatePassword,
+      await authApi.deleteAccount({
+        password: deletePassword || undefined, // Send undefined if empty (for OAuth users)
         confirm: true,
       });
       setMessage({
         type: 'success',
-        text: 'Hesabınız donduruldu. Çıkış yapılıyor...',
+        text: 'Hesabınız silindi. Tüm kişisel bilgileriniz anonimleştirildi. Çıkış yapılıyor...',
       });
-      // Logout will be handled by the auth context after redirect
+      // Logout and redirect
+      await logout();
       setTimeout(() => {
         window.location.href = '/login';
-      }, 2000);
+      }, 1000);
     } catch (err) {
       const msg =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Hesap dondurulurken bir hata oluştu.';
+          : 'Hesap silinirken bir hata oluştu.';
       setMessage({ type: 'error', text: msg });
     } finally {
-      setIsDeactivating(false);
+      setIsDeleting(false);
     }
   };
 
@@ -244,77 +245,81 @@ export function MeProfilePage() {
           )}
         </div>
 
-        {/* Hesabı Dondurma */}
+        {/* Hesabı Silme */}
         <div className="rounded-xl border border-rose-200 bg-rose-50/30 p-6">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-rose-600" />
-              <h2 className="text-lg font-semibold text-neutral-900">Hesabı Dondur</h2>
+              <h2 className="text-lg font-semibold text-neutral-900">Hesabı Sil</h2>
             </div>
             <button
               type="button"
               onClick={() => {
-                setActiveSection(activeSection === 'deactivate' ? null : 'deactivate');
+                setActiveSection(activeSection === 'delete' ? null : 'delete');
                 setMessage(null);
-                setDeactivatePassword('');
-                setDeactivateConfirm(false);
+                setDeletePassword('');
+                setDeleteConfirm(false);
               }}
               className="text-sm text-rose-600 hover:text-rose-700"
             >
-              {activeSection === 'deactivate' ? 'İptal' : 'Dondur'}
+              {activeSection === 'delete' ? 'İptal' : 'Sil'}
             </button>
           </div>
 
           <p className="mb-4 text-sm text-neutral-600">
-            Hesabınızı dondurduğunuzda giriş yapamazsınız. Bu işlem geri alınamaz.
+            Hesabınızı sildiğinizde tüm kişisel bilgileriniz anonimleştirilir ve giriş yapamazsınız. 
+            İçerikleriniz (makaleler, görüşler) korunur ancak "Silinmiş Kullanıcı" olarak gösterilir. 
+            Bu işlem geri alınamaz.
           </p>
 
-          {activeSection === 'deactivate' && (
-            <form onSubmit={handleDeactivate} className="space-y-4">
+          {activeSection === 'delete' && (
+            <form onSubmit={handleDeleteAccount} className="space-y-4">
+              {/* Password field - OAuth users can leave empty */}
               <div>
                 <label
-                  htmlFor="deactivatePassword"
+                  htmlFor="deletePassword"
                   className="mb-1 block text-sm font-medium text-neutral-700"
                 >
-                  Şifrenizi Girin
+                  Şifrenizi Girin (OAuth kullanıcıları için opsiyonel)
                 </label>
                 <input
-                  id="deactivatePassword"
+                  id="deletePassword"
                   type="password"
-                  value={deactivatePassword}
-                  onChange={(e) => setDeactivatePassword(e.target.value)}
-                  required
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
                   className="w-full rounded-lg border border-neutral-200 px-4 py-2.5 text-neutral-900 placeholder:text-neutral-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                  placeholder="Şifre girin (OAuth kullanıcıları boş bırakabilir)"
                 />
               </div>
 
               <div className="flex items-start gap-2">
                 <input
-                  id="deactivateConfirm"
+                  id="deleteConfirm"
                   type="checkbox"
-                  checked={deactivateConfirm}
-                  onChange={(e) => setDeactivateConfirm(e.target.checked)}
+                  checked={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.checked)}
                   required
                   className="mt-1 h-4 w-4 rounded border-neutral-300 text-rose-600 focus:ring-rose-500"
                 />
-                <label htmlFor="deactivateConfirm" className="text-sm text-neutral-700">
-                  Hesabımı dondurmayı onaylıyorum. Bu işlemin geri alınamaz olduğunu biliyorum.
+                <label htmlFor="deleteConfirm" className="text-sm text-neutral-700">
+                  Hesabımı silmeyi ve tüm kişisel bilgilerimin anonimleştirilmesini onaylıyorum. 
+                  Bu işlemin geri alınamaz olduğunu biliyorum.
                 </label>
               </div>
 
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={isDeactivating || !deactivateConfirm}
+                  disabled={isDeleting || !deleteConfirm}
                   className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isDeactivating ? (
+                  {isDeleting ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Donduruluyor...
+                      Siliniyor...
                     </>
                   ) : (
-                    'Hesabı Dondur'
+                    'Hesabı Sil'
                   )}
                 </button>
               </div>

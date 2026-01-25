@@ -131,6 +131,7 @@ export const adminUsersApi = {
     query?: string;
     role?: RoleName;
     isBanned?: boolean;
+    isDeleted?: boolean;
     page?: number;
     limit?: number;
   }): Promise<AdminUserListResponse> => {
@@ -138,6 +139,7 @@ export const adminUsersApi = {
     if (params?.query) searchParams.set('query', params.query);
     if (params?.role) searchParams.set('role', params.role);
     if (params?.isBanned !== undefined) searchParams.set('isBanned', String(params.isBanned));
+    if (params?.isDeleted !== undefined) searchParams.set('isDeleted', String(params.isDeleted));
     if (params?.page) searchParams.set('page', String(params.page));
     if (params?.limit) searchParams.set('limit', String(params.limit));
     
@@ -177,6 +179,20 @@ export const adminUsersApi = {
     action: 'grant' | 'revoke'
   ): Promise<UpdateRoleResponse> => {
     return apiClient.post<UpdateRoleResponse>(`/admin/users/${id}/role`, { role, action });
+  },
+
+  /**
+   * Restore deleted user account
+   */
+  restoreUser: async (
+    id: string,
+    newEmail?: string,
+    newUsername?: string
+  ): Promise<{ userId: string; resetToken: string; message: string }> => {
+    return apiClient.post<{ userId: string; resetToken: string; message: string }>(
+      `/admin/users/${id}/restore`,
+      { newEmail, newUsername }
+    );
   },
 };
 

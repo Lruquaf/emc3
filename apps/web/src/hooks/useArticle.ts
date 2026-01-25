@@ -5,13 +5,13 @@ import { articlesApi } from '../api/articles.api';
 import type { CreateArticleInput } from '@emc3/shared';
 
 /**
- * Hook for fetching article by slug
+ * Hook for fetching article by ID
  */
-export function useArticle(slug: string) {
+export function useArticle(articleId: string) {
   return useQuery({
-    queryKey: ['article', slug],
-    queryFn: () => articlesApi.getBySlug(slug),
-    enabled: !!slug,
+    queryKey: ['article', articleId],
+    queryFn: () => articlesApi.getById(articleId),
+    enabled: !!articleId,
   });
 }
 

@@ -31,7 +31,7 @@ export function MarkdownToolbar({ onInsert, disabled }: MarkdownToolbarProps) {
   ];
 
   return (
-    <div className="flex flex-wrap gap-1 rounded-t-lg border border-b-0 border-neutral-300 bg-neutral-50 p-2 dark:border-neutral-700 dark:bg-neutral-800">
+    <div className="flex flex-wrap gap-1 rounded-t-lg border border-b-0 border-neutral-300 bg-neutral-50 p-2">
       {tools.map(({ icon: Icon, action, title }, index) => (
         <button
           key={index}
@@ -43,7 +43,6 @@ export function MarkdownToolbar({ onInsert, disabled }: MarkdownToolbarProps) {
             rounded p-2 text-neutral-500 transition-colors
             hover:bg-neutral-200 hover:text-neutral-700
             disabled:cursor-not-allowed disabled:opacity-50
-            dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200
           "
         >
           <Icon size={18} />

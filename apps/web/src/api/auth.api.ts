@@ -86,6 +86,17 @@ export const authApi = {
     return apiClient.get<UserResponse>('/auth/me');
   },
 
+  // Get avatar upload signature
+  async getAvatarUploadSignature(): Promise<{
+    signature: string;
+    timestamp: number;
+    folder: string;
+    cloudName: string;
+    apiKey: string;
+  }> {
+    return apiClient.get('/me/avatar/upload-signature');
+  },
+
   // Update profile (displayName, about, avatarUrl, socialLinks)
   async updateProfile(data: {
     displayName?: string | null;
@@ -104,12 +115,20 @@ export const authApi = {
     return apiClient.post<{ message: string }>('/me/change-password', data);
   },
 
-  // Deactivate account
+  // Delete account
+  async deleteAccount(data: {
+    password?: string;
+    confirm: boolean;
+  }): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/me/delete-account', data);
+  },
+  
+  // Legacy alias for backward compatibility
   async deactivateAccount(data: {
     password: string;
     confirm: boolean;
   }): Promise<{ message: string }> {
-    return apiClient.post<{ message: string }>('/me/deactivate', data);
+    return this.deleteAccount(data);
   },
 
   // Refresh token

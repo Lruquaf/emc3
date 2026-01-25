@@ -5,6 +5,7 @@ import { Search, Trash2, RotateCcw, ExternalLink, X } from 'lucide-react';
 
 import { adminArticlesApi } from '../../api/admin.api';
 import { useDebounce } from '../../hooks/useDebounce';
+import { Select } from '../../components/ui';
 import type { AdminArticleDTO } from '@emc3/shared';
 
 export function AdminArticlesPage() {
@@ -85,16 +86,16 @@ export function AdminArticlesPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-4">
+      <div className="mb-6 flex flex-wrap gap-3">
         <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
             <input
               type="text"
               placeholder="Başlık veya özet ara..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full pl-9 pr-9 py-1.5 text-sm bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/20"
             />
             {searchInput && (
               <button
@@ -102,24 +103,26 @@ export function AdminArticlesPage() {
                 onClick={() => {
                   setSearchInput('');
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-full text-muted hover:text-text hover:bg-bg/50 transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-full text-muted hover:text-text hover:bg-bg/50 transition-colors"
                 aria-label="Aramayı temizle"
               >
-                <X size={14} />
+                <X size={12} />
               </button>
             )}
           </div>
         </form>
 
-        <select
+        <Select
           value={statusFilter || ''}
-          onChange={(e) => handleFilterChange('status', e.target.value || null)}
-          className="px-4 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-accent"
-        >
-          <option value="">Tüm Durumlar</option>
-          <option value="PUBLISHED">Yayında</option>
-          <option value="REMOVED">Kaldırılmış</option>
-        </select>
+          onChange={(value) => handleFilterChange('status', value || null)}
+          placeholder="Tüm Durumlar"
+          options={[
+            { value: '', label: 'Tüm Durumlar' },
+            { value: 'PUBLISHED', label: 'Yayında' },
+            { value: 'REMOVED', label: 'Kaldırılmış' },
+          ]}
+          className="min-w-[160px]"
+        />
       </div>
 
       {/* Error state */}
@@ -210,7 +213,7 @@ export function AdminArticlesPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        to={`/article/${article.slug}`}
+                        to={`/article/${article.id}`}
                         target="_blank"
                         className="p-2 text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
                         title="Makaleyi Görüntüle"

@@ -10,14 +10,14 @@ interface MarkdownPreviewProps {
 export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProps) {
   if (!content.trim()) {
     return (
-      <div className={`italic text-neutral-400 dark:text-neutral-500 ${className}`}>
+      <div className={`italic text-neutral-400 ${className}`}>
         Önizleme burada görünecek...
       </div>
     );
   }
 
   return (
-    <div className={`prose prose-neutral max-w-none dark:prose-invert ${className}`}>
+    <div className={`prose prose-neutral max-w-none ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}
@@ -32,7 +32,7 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
                   target: '_blank',
                   rel: 'noopener noreferrer',
                 })}
-                className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                className="text-emerald-600 hover:text-emerald-700"
                 {...props}
               >
                 {children}
@@ -45,7 +45,7 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
             if (isInline) {
               return (
                 <code
-                  className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-sm dark:bg-neutral-800"
+                  className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-sm"
                   {...props}
                 >
                   {children}

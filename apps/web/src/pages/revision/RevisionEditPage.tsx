@@ -9,21 +9,16 @@ import {
   useSubmitRevision,
   useWithdrawRevision,
 } from '../../hooks/useRevision';
+import { useCreateRevision } from '../../hooks/useArticle';
 import { EditorWithPreview } from '../../components/editor/EditorWithPreview';
 import { RevisionStatus } from '../../components/revision/RevisionStatus';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { CategoryTreePicker } from '../../components/category/CategoryTreePicker';
 import { EDITABLE_STATUSES } from '@emc3/shared';
 import type { RevisionStatus as RevisionStatusType } from '@emc3/shared';
-
-// TODO: Replace with actual categories API
-const MOCK_CATEGORIES = [
-  { id: '1', name: 'Fıkıh', slug: 'fikih' },
-  { id: '2', name: 'Hadis', slug: 'hadis' },
-  { id: '3', name: 'Tefsir', slug: 'tefsir' },
-  { id: '4', name: 'Akaid', slug: 'akaid' },
-  { id: '5', name: 'Siyer', slug: 'siyer' },
-];
+import { FileText } from 'lucide-react';
 
 export function RevisionEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +29,7 @@ export function RevisionEditPage() {
   const deleteRevision = useDeleteRevision();
   const submitRevision = useSubmitRevision(id!);
   const withdrawRevision = useWithdrawRevision(id!);
+  const createRevision = useCreateRevision();
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
@@ -41,6 +37,8 @@ export function RevisionEditPage() {
   const [bibliography, setBibliography] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Sync form state with fetched data
   useEffect(() => {
@@ -80,18 +78,13 @@ export function RevisionEditPage() {
   }
 
   const isEditable = EDITABLE_STATUSES.includes(revision.status as RevisionStatusType);
+  const isWithdrawn = revision.status === 'REV_WITHDRAWN';
   const canSubmit = revision.status === 'REV_DRAFT' || revision.status === 'REV_CHANGES_REQUESTED';
   const canWithdraw = revision.status === 'REV_IN_REVIEW';
   const canDelete = revision.status === 'REV_DRAFT';
 
-  const toggleCategory = (categoryId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((cid) => cid !== categoryId)
-        : prev.length < 5
-        ? [...prev, categoryId]
-        : prev
-    );
+  const handleCreateNewDraft = async () => {
+    await createRevision.mutateAsync(revision.articleId);
   };
 
   const handleSave = async () => {
@@ -112,15 +105,13 @@ export function RevisionEditPage() {
   };
 
   const handleWithdraw = async () => {
-    if (confirm('İncelemeden geri çekmek istediğinize emin misiniz?')) {
-      await withdrawRevision.mutateAsync();
-    }
+    await withdrawRevision.mutateAsync();
+    setShowWithdrawDialog(false);
   };
 
   const handleDelete = async () => {
-    if (confirm('Bu taslağı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-      await deleteRevision.mutateAsync(id!);
-    }
+    await deleteRevision.mutateAsync(id!);
+    setShowDeleteDialog(false);
   };
 
   const isValid =
@@ -139,14 +130,14 @@ export function RevisionEditPage() {
               <RevisionStatus status={revision.status as RevisionStatusType} />
             </div>
             <p className="text-sm text-neutral-500">
-              /{revision.articleSlug}
+              Article ID: {revision.articleId}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             {canDelete && (
               <button
-                onClick={handleDelete}
+                onClick={() => setShowDeleteDialog(true)}
                 disabled={deleteRevision.isPending}
                 className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
               >
@@ -157,7 +148,7 @@ export function RevisionEditPage() {
 
             {canWithdraw && (
               <button
-                onClick={handleWithdraw}
+                onClick={() => setShowWithdrawDialog(true)}
                 disabled={withdrawRevision.isPending}
                 className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-4 py-2 text-sm font-medium text-amber-600 hover:bg-amber-50 disabled:opacity-50"
               >
@@ -168,6 +159,44 @@ export function RevisionEditPage() {
           </div>
         </div>
       </div>
+
+      {/* Withdrawn Alert */}
+      {isWithdrawn && (
+        <div className="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <FileText className="h-6 w-6 text-neutral-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                Bu revizyon geri çekilmiş durumda
+              </h3>
+              <p className="mb-4 text-sm text-neutral-600">
+                Geri çekilen bir revizyonu doğrudan düzenleyemezsiniz. Düzenlemeye devam etmek için
+                yeni bir taslak oluşturmanız gerekiyor.
+              </p>
+              <button
+                type="button"
+                onClick={handleCreateNewDraft}
+                disabled={createRevision.isPending}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {createRevision.isPending ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span>Oluşturuluyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={16} />
+                    <span>Yeni Taslak Oluştur</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feedback Alert */}
       {revision.lastReviewFeedback && revision.status === 'REV_CHANGES_REQUESTED' && (
@@ -212,26 +241,29 @@ export function RevisionEditPage() {
 
         {/* Categories */}
         <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <label className="mb-2 block text-sm font-medium text-neutral-700">
+          <div className="mb-2 block text-sm font-medium text-neutral-700">
             Kategoriler
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {MOCK_CATEGORIES.map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => isEditable && toggleCategory(category.id)}
-                disabled={!isEditable}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
-                  selectedCategories.includes(category.id)
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 disabled:hover:bg-white'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
           </div>
+          {isEditable ? (
+            <CategoryTreePicker
+              selectedIds={selectedCategories}
+              onChange={setSelectedCategories}
+              maxSelections={5}
+            />
+          ) : (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <div className="flex flex-wrap gap-2">
+                {revision.categories.map((category) => (
+                  <span
+                    key={category.id}
+                    className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700"
+                  >
+                    {category.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -313,6 +345,32 @@ export function RevisionEditPage() {
           </div>
         )}
       </form>
+
+      {/* Withdraw Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showWithdrawDialog}
+        onClose={() => setShowWithdrawDialog(false)}
+        onConfirm={handleWithdraw}
+        title="İncelemeden Geri Çek"
+        message="İncelemeden geri çekmek istediğinize emin misiniz? Bu işlemden sonra revizyonunuz taslak durumuna dönecektir."
+        confirmText="Geri Çek"
+        cancelText="İptal"
+        variant="warning"
+        isLoading={withdrawRevision.isPending}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDelete}
+        title="Taslağı Sil"
+        message="Bu taslağı silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+        confirmText="Sil"
+        cancelText="İptal"
+        variant="danger"
+        isLoading={deleteRevision.isPending}
+      />
     </div>
   );
 }

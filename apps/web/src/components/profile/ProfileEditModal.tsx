@@ -3,6 +3,7 @@ import { X, Loader2 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { authApi } from '@/api/auth.api';
+import { AvatarUpload } from './AvatarUpload';
 import { cn } from '@/utils/cn';
 
 interface ProfileEditModalProps {
@@ -14,7 +15,7 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
   const { user, refreshUser } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [about, setAbout] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -25,7 +26,7 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
     if (user?.profile && isOpen) {
       setDisplayName(user.profile.displayName ?? '');
       setAbout(user.profile.about ?? '');
-      setAvatarUrl(user.profile.avatarUrl ?? '');
+      setAvatarUrl(user.profile.avatarUrl ?? null);
       setSocialLinks((user.profile.socialLinks as Record<string, string>) ?? {});
       setMessage(null);
     }
@@ -46,7 +47,7 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
       await authApi.updateProfile({
         displayName: displayName.trim() || null,
         about: about.trim() || null,
-        avatarUrl: avatarUrl.trim() || null,
+        avatarUrl: avatarUrl || null,
         socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : null,
       });
       await refreshUser();
@@ -125,19 +126,14 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
                   <p className="mt-1 text-xs text-neutral-500">{displayName.length}/100</p>
                 </div>
 
-                <div>
-                  <label htmlFor="modal-avatarUrl" className="mb-1 block text-sm font-medium text-neutral-700">
-                    Avatar URL
-                  </label>
-                  <input
-                    id="modal-avatarUrl"
-                    type="url"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  />
-                </div>
+                <AvatarUpload
+                  currentAvatarUrl={avatarUrl}
+                  onUploadComplete={(url) => {
+                    setAvatarUrl(url || null);
+                    // Refresh user to get updated avatar
+                    refreshUser();
+                  }}
+                />
               </div>
 
               {/* Sağ sütun */}

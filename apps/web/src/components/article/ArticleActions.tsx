@@ -1,4 +1,5 @@
-import { Share2, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Share2, Eye, Check } from 'lucide-react';
 
 import { LikeButton } from '../social/LikeButton';
 import { SaveButton } from '../social/SaveButton';
@@ -15,6 +16,15 @@ export function ArticleActions({
   counts,
   viewerInteraction,
 }: ArticleActionsProps) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -27,7 +37,7 @@ export function ArticleActions({
     } else {
       // Fallback: copy to clipboard
       await navigator.clipboard.writeText(window.location.href);
-      alert('Bağlantı panoya kopyalandı!');
+      setCopied(true);
     }
   };
 
@@ -57,14 +67,25 @@ export function ArticleActions({
         <Eye size={18} />
         <span className="tabular-nums">{formatCount(counts.views)}</span>
       </div>
-      <button
-        onClick={handleShare}
-        className="ml-auto inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
-        aria-label="Paylaş"
-      >
-        <Share2 size={18} />
-        Paylaş
-      </button>
+      <div className="ml-auto relative">
+        <button
+          onClick={handleShare}
+          className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+          aria-label="Paylaş"
+        >
+          {copied ? (
+            <>
+              <Check size={18} />
+              Kopyalandı!
+            </>
+          ) : (
+            <>
+              <Share2 size={18} />
+              Paylaş
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
