@@ -3,10 +3,10 @@ import type {
   FollowListResponse,
   UserSummaryDTO,
   UserProfileDTO,
-} from '@emc3/shared';
+} from "@emc3/shared";
 
-import { prisma } from '../lib/prisma.js';
-import { AppError } from '../utils/errors.js';
+import { prisma } from "../lib/prisma.js";
+import { AppError } from "../utils/errors.js";
 
 // ═══════════════════════════════════════════════════════════
 // Follow Service
@@ -17,11 +17,11 @@ import { AppError } from '../utils/errors.js';
  */
 export async function followUser(
   followerId: string,
-  followedId: string
+  followedId: string,
 ): Promise<FollowToggleResponse> {
   // Cannot follow self
   if (followerId === followedId) {
-    throw AppError.conflict('Cannot follow yourself');
+    throw AppError.conflict("Cannot follow yourself");
   }
 
   // Check target user exists and is not banned
@@ -31,11 +31,11 @@ export async function followUser(
   });
 
   if (!targetUser) {
-    throw AppError.notFound('User not found');
+    throw AppError.notFound("User not found");
   }
 
   if (targetUser.ban?.isBanned) {
-    throw AppError.forbidden('Cannot follow banned user');
+    throw AppError.forbidden("Cannot follow banned user");
   }
 
   // Check if already following
@@ -65,7 +65,7 @@ export async function followUser(
  */
 export async function unfollowUser(
   followerId: string,
-  followedId: string
+  followedId: string,
 ): Promise<FollowToggleResponse> {
   // Check if following
   const existingFollow = await prisma.follow.findUnique({
@@ -98,7 +98,7 @@ export async function getFollowers(
   username: string,
   limit: number,
   cursor?: string,
-  viewerId?: string
+  viewerId?: string,
 ): Promise<FollowListResponse> {
   const user = await getUserByUsername(username);
 
@@ -124,7 +124,7 @@ export async function getFollowers(
         },
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: limit + 1,
   });
 
@@ -146,7 +146,7 @@ export async function getFollowers(
 
   return {
     items: items.map((follow) =>
-      mapToUserSummary(follow.follower, viewerFollowing)
+      mapToUserSummary(follow.follower, viewerFollowing),
     ),
     meta: {
       nextCursor: hasMore
@@ -164,7 +164,7 @@ export async function getFollowing(
   username: string,
   limit: number,
   cursor?: string,
-  viewerId?: string
+  viewerId?: string,
 ): Promise<FollowListResponse> {
   const user = await getUserByUsername(username);
 
@@ -190,7 +190,7 @@ export async function getFollowing(
         },
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: limit + 1,
   });
 
@@ -212,7 +212,7 @@ export async function getFollowing(
 
   return {
     items: items.map((follow) =>
-      mapToUserSummary(follow.followed, viewerFollowing)
+      mapToUserSummary(follow.followed, viewerFollowing),
     ),
     meta: {
       nextCursor: hasMore
@@ -228,7 +228,7 @@ export async function getFollowing(
  */
 export async function isFollowing(
   followerId: string,
-  followedId: string
+  followedId: string,
 ): Promise<boolean> {
   const follow = await prisma.follow.findUnique({
     where: {
@@ -243,7 +243,7 @@ export async function isFollowing(
  */
 export async function getUserProfile(
   username: string,
-  viewerId?: string
+  viewerId?: string,
 ): Promise<UserProfileDTO> {
   const user = await prisma.user.findUnique({
     where: { username },
@@ -254,7 +254,7 @@ export async function getUserProfile(
   });
 
   if (!user) {
-    throw AppError.notFound('User not found');
+    throw AppError.notFound("User not found");
   }
 
   const [articleCount, followerCount, followingCount, isFollowingResult] =
@@ -262,8 +262,8 @@ export async function getUserProfile(
       prisma.article.count({
         where: {
           authorId: user.id,
-          status: 'PUBLISHED',
-          revisions: { some: { status: 'REV_PUBLISHED' } },
+          status: "PUBLISHED",
+          revisions: { some: { status: "REV_PUBLISHED" } },
         },
       }),
       getFollowerCount(user.id),
@@ -273,7 +273,8 @@ export async function getUserProfile(
       viewerId ? isFollowing(viewerId, user.id) : Promise.resolve(false),
     ]);
 
-  const socialLinks = (user.profile?.socialLinks as Record<string, string>) ?? {};
+  const socialLinks =
+    (user.profile?.socialLinks as Record<string, string>) ?? {};
 
   return {
     id: user.id,
@@ -303,11 +304,20 @@ export async function getUserProfile(
 async function getUserByUsername(username: string) {
   const user = await prisma.user.findUnique({
     where: { username },
-    include: { ban: true },
+    include: {
+      ban: true,
+      profile: {
+        select: {
+          displayName: true,
+          avatarUrl: true,
+          about: true,
+        },
+      },
+    },
   });
 
   if (!user) {
-    throw AppError.notFound('User not found');
+    throw AppError.notFound("User not found");
   }
 
   return user;
@@ -322,6 +332,7 @@ async function getFollowerCount(userId: string): Promise<number> {
 interface UserWithProfile {
   id: string;
   username: string;
+  isDeleted: boolean;
   profile: {
     displayName: string | null;
     avatarUrl: string | null;
@@ -332,7 +343,7 @@ interface UserWithProfile {
 
 function mapToUserSummary(
   user: UserWithProfile,
-  viewerFollowing: Set<string>
+  viewerFollowing: Set<string>,
 ): UserSummaryDTO {
   return {
     id: user.id,
@@ -342,6 +353,6 @@ function mapToUserSummary(
     about: user.profile?.about ?? null,
     isFollowing: viewerFollowing.has(user.id),
     isBanned: user.ban?.isBanned ?? false,
+    isDeleted: user.isDeleted,
   };
 }
-

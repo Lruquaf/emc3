@@ -1,6 +1,6 @@
-import type { RevisionStatus, AuthorDTO } from './article.js';
-import type { CategoryDTO } from './category.js';
-import type { RoleName } from './user.js';
+import type { RevisionStatus, AuthorDTO } from "./article.js";
+import type { CategoryDTO } from "./category.js";
+import type { RoleName } from "./user.js";
 
 // ═══════════════════════════════════════════════════════════
 // User Moderation DTOs
@@ -29,7 +29,7 @@ export interface BanUserResponse {
  */
 export interface UpdateRoleRequest {
   role: RoleName;
-  action: 'grant' | 'revoke';
+  action: "grant" | "revoke";
 }
 
 /**
@@ -106,7 +106,7 @@ export interface RemoveArticleRequest {
  */
 export interface AdminArticleDTO {
   id: string;
-  status: 'PUBLISHED' | 'REMOVED';
+  status: "PUBLISHED" | "REMOVED";
   author: {
     id: string;
     username: string;
@@ -145,7 +145,7 @@ export interface AdminArticleListResponse {
  */
 export interface AdminArticleListParams {
   query?: string;
-  status?: 'PUBLISHED' | 'REMOVED';
+  status?: "PUBLISHED" | "REMOVED";
   authorId?: string;
   page?: number;
   limit?: number;
@@ -186,16 +186,16 @@ export interface AdminDashboardStats {
  * Review queue item (summary)
  */
 export interface ReviewQueueItemDTO {
-  id: string;                    // revision id
+  id: string; // revision id
   articleId: string;
   title: string;
   summary: string;
   author: AuthorDTO;
   categories: CategoryDTO[];
   status: RevisionStatus;
-  submittedAt: string;           // when status changed to IN_REVIEW
+  submittedAt: string; // when status changed to IN_REVIEW
   previousFeedbackCount: number; // how many times feedback was given
-  isUpdate: boolean;             // is this an update to existing article?
+  isUpdate: boolean; // is this an update to existing article?
 }
 
 /**
@@ -221,7 +221,7 @@ export interface ReviewFeedbackHistoryDTO {
   id: string;
   reviewerId: string;
   reviewerUsername: string;
-  action: 'FEEDBACK' | 'APPROVE';
+  action: "FEEDBACK" | "APPROVE";
   feedbackText: string | null;
   createdAt: string;
 }
@@ -233,24 +233,24 @@ export interface RevisionReviewDetailDTO {
   id: string;
   articleId: string;
   status: RevisionStatus;
-  
+
   // Content
   title: string;
   summary: string;
   contentMarkdown: string;
   bibliography: string | null;
   categories: CategoryDTO[];
-  
+
   // Author info
   author: AuthorDTO;
-  
+
   // Article info (for context)
-  isNewArticle: boolean;         // no published revision yet
+  isNewArticle: boolean; // no published revision yet
   currentPublishedTitle: string | null;
-  
+
   // Review history
   feedbackHistory: ReviewFeedbackHistoryDTO[];
-  
+
   // Timestamps
   createdAt: string;
   submittedAt: string;
@@ -265,14 +265,14 @@ export interface RevisionReviewDetailDTO {
  * Publish queue item
  */
 export interface PublishQueueItemDTO {
-  id: string;                    // revision id
+  id: string; // revision id
   articleId: string;
-  articleSlug: string;
+  articleSlug: string | null; // Article slug was removed, kept for compatibility
   title: string;
   summary: string;
   author: AuthorDTO;
   categories: CategoryDTO[];
-  approvedAt: string;            // when approved
+  approvedAt: string; // when approved
   approvedBy: {
     id: string;
     username: string;
@@ -323,4 +323,3 @@ export interface PublishResponse {
   firstPublishedAt: string;
   lastPublishedAt: string;
 }
-

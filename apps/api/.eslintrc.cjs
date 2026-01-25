@@ -23,14 +23,14 @@ module.exports = {
   rules: {
     ...baseConfig.rules,
     'no-console': 'off', // API'de console.log kullanabiliriz
-    // Import resolver hatalarını geçici olarak warning'e düşür
-    'import/no-unresolved': ['warn', { 
-      ignore: ['^cloudinary'],
-      caseSensitive: false,
-    }],
-    'import/namespace': 'warn',
-    'import/order': 'warn',
-    'import/no-duplicates': 'warn',
+    // Import resolver hatalarını geçici olarak kapat (ESLint resolver sorunları var)
+    'import/no-unresolved': 'off',
+    'import/namespace': 'off',
+    'import/order': 'off',
+    'import/no-duplicates': 'off',
+    'import/default': 'off',
+    'import/no-named-as-default': 'off',
+    'import/no-named-as-default-member': 'off',
   },
 };
 

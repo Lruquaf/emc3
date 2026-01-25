@@ -10,11 +10,11 @@ import type {
   UpdateReplyRequest,
   OpinionAuthorDTO,
   OpinionReplyDTO,
-} from '@emc3/shared';
-import { OPINION_EDIT_WINDOW_MS } from '@emc3/shared';
+} from "@emc3/shared";
+import { OPINION_EDIT_WINDOW_MS } from "@emc3/shared";
 
-import { prisma } from '../lib/prisma.js';
-import { AppError } from '../utils/errors.js';
+import { prisma } from "../lib/prisma.js";
+import { AppError } from "../utils/errors.js";
 
 // ═══════════════════════════════════════════════════════════
 // Opinion Service
@@ -26,7 +26,7 @@ import { AppError } from '../utils/errors.js';
 export async function getOpinions(
   articleId: string,
   viewerId: string | undefined,
-  params: OpinionListParams
+  params: OpinionListParams,
 ): Promise<OpinionListResponse> {
   // Validate article exists
   const article = await prisma.article.findUnique({
@@ -35,10 +35,10 @@ export async function getOpinions(
   });
 
   if (!article) {
-    throw AppError.notFound('Article not found');
+    throw AppError.notFound("Article not found");
   }
 
-  const { sort = 'helpful', limit = 20, cursor } = params;
+  const { sort = "helpful", limit = 20, cursor } = params;
   const takeLimit = Math.min(limit, 50);
 
   // Build where clause
@@ -58,24 +58,32 @@ export async function getOpinions(
 
   // Get opinions with sorting
   const orderBy =
-    sort === 'helpful'
-      ? [{ likeCount: 'desc' as const }, { createdAt: 'desc' as const }]
-      : [{ createdAt: 'desc' as const }];
+    sort === "helpful"
+      ? [{ likeCount: "desc" as const }, { createdAt: "desc" as const }]
+      : [{ createdAt: "desc" as const }];
 
   const [opinions, total, viewerOpinion] = await Promise.all([
     prisma.opinion.findMany({
       where,
       include: {
         author: {
-          include: {
+          select: {
+            id: true,
+            username: true,
+            isDeleted: true,
             profile: { select: { displayName: true, avatarUrl: true } },
           },
         },
-        likes: viewerId ? { where: { userId: viewerId } } : { where: { userId: { in: [] } } }, // Empty array if no viewerId
+        likes: viewerId
+          ? { where: { userId: viewerId } }
+          : { where: { userId: { in: [] } } }, // Empty array if no viewerId
         reply: {
           include: {
             replier: {
-              include: {
+              select: {
+                id: true,
+                username: true,
+                isDeleted: true,
                 profile: { select: { displayName: true, avatarUrl: true } },
               },
             },
@@ -94,7 +102,10 @@ export async function getOpinions(
           },
           include: {
             author: {
-              include: {
+              select: {
+                id: true,
+                username: true,
+                isDeleted: true,
                 profile: { select: { displayName: true, avatarUrl: true } },
               },
             },
@@ -102,7 +113,10 @@ export async function getOpinions(
             reply: {
               include: {
                 replier: {
-                  include: {
+                  select: {
+                    id: true,
+                    username: true,
+                    isDeleted: true,
                     profile: { select: { displayName: true, avatarUrl: true } },
                   },
                 },
@@ -136,7 +150,7 @@ export async function getOpinions(
 export async function createOpinion(
   articleId: string,
   authorId: string,
-  input: CreateOpinionRequest
+  input: CreateOpinionRequest,
 ): Promise<CreateOpinionResponse> {
   // Validate article exists
   const article = await prisma.article.findUnique({
@@ -145,7 +159,7 @@ export async function createOpinion(
   });
 
   if (!article) {
-    throw AppError.notFound('Article not found');
+    throw AppError.notFound("Article not found");
   }
 
   // Check if user already has an opinion
@@ -157,7 +171,7 @@ export async function createOpinion(
   });
 
   if (existing) {
-    throw AppError.conflict('You already have an opinion on this article');
+    throw AppError.conflict("You already have an opinion on this article");
   }
 
   // Create opinion
@@ -169,12 +183,26 @@ export async function createOpinion(
     },
     include: {
       author: {
-        include: {
+        select: {
+          id: true,
+          username: true,
+          isDeleted: true,
           profile: { select: { displayName: true, avatarUrl: true } },
         },
       },
       likes: { where: { userId: authorId } },
-      reply: true,
+      reply: {
+        include: {
+          replier: {
+            select: {
+              id: true,
+              username: true,
+              isDeleted: true,
+              profile: { select: { displayName: true, avatarUrl: true } },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -189,7 +217,7 @@ export async function createOpinion(
 export async function updateOpinion(
   opinionId: string,
   authorId: string,
-  input: UpdateOpinionRequest
+  input: UpdateOpinionRequest,
 ): Promise<OpinionDTO> {
   const opinion = await prisma.opinion.findUnique({
     where: { id: opinionId },
@@ -199,11 +227,11 @@ export async function updateOpinion(
   });
 
   if (!opinion) {
-    throw AppError.notFound('Opinion not found');
+    throw AppError.notFound("Opinion not found");
   }
 
   if (opinion.authorId !== authorId) {
-    throw AppError.forbidden('You can only edit your own opinions');
+    throw AppError.forbidden("You can only edit your own opinions");
   }
 
   // Check edit window (10 minutes)
@@ -212,7 +240,7 @@ export async function updateOpinion(
   const editWindowEnd = new Date(createdAt.getTime() + OPINION_EDIT_WINDOW_MS);
 
   if (now > editWindowEnd) {
-    throw AppError.forbidden('Edit window has expired (10 minutes)');
+    throw AppError.forbidden("Edit window has expired (10 minutes)");
   }
 
   // Update opinion
@@ -221,7 +249,10 @@ export async function updateOpinion(
     data: { bodyMarkdown: input.bodyMarkdown },
     include: {
       author: {
-        include: {
+        select: {
+          id: true,
+          username: true,
+          isDeleted: true,
           profile: { select: { displayName: true, avatarUrl: true } },
         },
       },
@@ -229,7 +260,10 @@ export async function updateOpinion(
       reply: {
         include: {
           replier: {
-            include: {
+            select: {
+              id: true,
+              username: true,
+              isDeleted: true,
               profile: { select: { displayName: true, avatarUrl: true } },
             },
           },
@@ -246,7 +280,7 @@ export async function updateOpinion(
  */
 export async function toggleOpinionLike(
   opinionId: string,
-  userId: string
+  userId: string,
 ): Promise<OpinionLikeToggleResponse> {
   const opinion = await prisma.opinion.findUnique({
     where: { id: opinionId },
@@ -254,15 +288,15 @@ export async function toggleOpinionLike(
   });
 
   if (!opinion) {
-    throw AppError.notFound('Opinion not found');
+    throw AppError.notFound("Opinion not found");
   }
 
-    const existingLike = await prisma.opinionLike.findFirst({
-      where: {
-        userId,
-        opinionId,
-      },
-    });
+  const existingLike = await prisma.opinionLike.findFirst({
+    where: {
+      userId,
+      opinionId,
+    },
+  });
 
   if (existingLike) {
     // Unlike
@@ -309,7 +343,7 @@ export async function toggleOpinionLike(
 export async function createReply(
   opinionId: string,
   replierId: string,
-  input: CreateReplyRequest
+  input: CreateReplyRequest,
 ): Promise<OpinionReplyDTO> {
   const opinion = await prisma.opinion.findUnique({
     where: { id: opinionId },
@@ -320,17 +354,17 @@ export async function createReply(
   });
 
   if (!opinion) {
-    throw AppError.notFound('Opinion not found');
+    throw AppError.notFound("Opinion not found");
   }
 
   // Check if replier is article author
   if (opinion.article.authorId !== replierId) {
-    throw AppError.forbidden('Only the article author can reply');
+    throw AppError.forbidden("Only the article author can reply");
   }
 
   // Check if reply already exists
   if (opinion.reply) {
-    throw AppError.conflict('Reply already exists');
+    throw AppError.conflict("Reply already exists");
   }
 
   // Create reply
@@ -342,7 +376,10 @@ export async function createReply(
     },
     include: {
       replier: {
-        include: {
+        select: {
+          id: true,
+          username: true,
+          isDeleted: true,
           profile: { select: { displayName: true, avatarUrl: true } },
         },
       },
@@ -358,18 +395,28 @@ export async function createReply(
 export async function updateReply(
   opinionId: string,
   replierId: string,
-  input: UpdateReplyRequest
+  input: UpdateReplyRequest,
 ): Promise<OpinionReplyDTO> {
   const reply = await prisma.opinionReply.findUnique({
     where: { opinionId },
+    include: {
+      replier: {
+        select: {
+          id: true,
+          username: true,
+          isDeleted: true,
+          profile: { select: { displayName: true, avatarUrl: true } },
+        },
+      },
+    },
   });
 
   if (!reply) {
-    throw AppError.notFound('Reply not found');
+    throw AppError.notFound("Reply not found");
   }
 
   if (reply.replierId !== replierId) {
-    throw AppError.forbidden('You can only edit your own replies');
+    throw AppError.forbidden("You can only edit your own replies");
   }
 
   // Check edit window (10 minutes)
@@ -378,7 +425,7 @@ export async function updateReply(
   const editWindowEnd = new Date(createdAt.getTime() + OPINION_EDIT_WINDOW_MS);
 
   if (now > editWindowEnd) {
-    throw AppError.forbidden('Edit window has expired (10 minutes)');
+    throw AppError.forbidden("Edit window has expired (10 minutes)");
   }
 
   // Update reply
@@ -387,7 +434,10 @@ export async function updateReply(
     data: { bodyMarkdown: input.bodyMarkdown },
     include: {
       replier: {
-        include: {
+        select: {
+          id: true,
+          username: true,
+          isDeleted: true,
           profile: { select: { displayName: true, avatarUrl: true } },
         },
       },
@@ -403,7 +453,7 @@ export async function updateReply(
  */
 export async function deleteOpinion(
   opinionId: string,
-  authorId: string
+  authorId: string,
 ): Promise<void> {
   const opinion = await prisma.opinion.findUnique({
     where: { id: opinionId },
@@ -413,15 +463,15 @@ export async function deleteOpinion(
   });
 
   if (!opinion) {
-    throw AppError.notFound('Opinion not found');
+    throw AppError.notFound("Opinion not found");
   }
 
   if (opinion.authorId !== authorId) {
-    throw AppError.forbidden('You can only delete your own opinions');
+    throw AppError.forbidden("You can only delete your own opinions");
   }
 
   if (opinion.removedAt) {
-    throw AppError.conflict('Opinion is already deleted');
+    throw AppError.conflict("Opinion is already deleted");
   }
 
   const now = new Date();
@@ -460,6 +510,7 @@ function mapToOpinionDTO(
     author: {
       id: string;
       username: string;
+      isDeleted?: boolean;
       profile: { displayName: string | null; avatarUrl: string | null } | null;
     };
     likes: { userId: string }[];
@@ -471,12 +522,16 @@ function mapToOpinionDTO(
       replier: {
         id: string;
         username: string;
-        profile: { displayName: string | null; avatarUrl: string | null } | null;
+        isDeleted?: boolean;
+        profile: {
+          displayName: string | null;
+          avatarUrl: string | null;
+        } | null;
       };
     } | null;
   },
   viewerId: string | undefined,
-  articleAuthorId: string
+  articleAuthorId: string,
 ): OpinionDTO {
   const now = new Date();
   const createdAt = opinion.createdAt;
@@ -484,7 +539,18 @@ function mapToOpinionDTO(
   const canEdit = opinion.author.id === viewerId && now <= editWindowEnd;
 
   const reply = opinion.reply
-    ? mapToReplyDTO(opinion.reply, viewerId)
+    ? mapToReplyDTO(
+        {
+          bodyMarkdown: opinion.reply.bodyMarkdown,
+          createdAt: opinion.reply.createdAt,
+          updatedAt: opinion.reply.updatedAt,
+          replier: {
+            ...opinion.reply.replier,
+            isDeleted: opinion.reply.replier.isDeleted ?? false,
+          },
+        },
+        viewerId,
+      )
     : null;
 
   return {
@@ -517,11 +583,11 @@ function mapToReplyDTO(
     replier: {
       id: string;
       username: string;
-      isDeleted: boolean;
+      isDeleted?: boolean;
       profile: { displayName: string | null; avatarUrl: string | null } | null;
     };
   },
-  viewerId: string | undefined
+  viewerId: string | undefined,
 ): OpinionReplyDTO {
   const now = new Date();
   const createdAt = reply.createdAt;

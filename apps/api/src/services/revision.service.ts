@@ -5,11 +5,11 @@ import type {
   StatusChangeResponse,
   MyRevisionsResponse,
   RevisionStatus,
-} from '@emc3/shared';
-import { EDITABLE_STATUSES, canTransition } from '@emc3/shared';
+} from "@emc3/shared";
+import { EDITABLE_STATUSES, canTransition } from "@emc3/shared";
 
-import { prisma } from '../lib/prisma.js';
-import { AppError } from '../utils/errors.js';
+import { prisma } from "../lib/prisma.js";
+import { AppError } from "../utils/errors.js";
 
 // ═══════════════════════════════════════════════════════════
 // Get Revision by ID
@@ -21,13 +21,13 @@ import { AppError } from '../utils/errors.js';
 export async function getRevision(
   revisionId: string,
   requesterId: string,
-  requesterRoles: string[]
+  requesterRoles: string[],
 ): Promise<RevisionDTO> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
       article: {
-        select: { id: true, slug: true, authorId: true },
+        select: { id: true, authorId: true },
       },
       categories: {
         include: {
@@ -35,7 +35,7 @@ export async function getRevision(
         },
       },
       reviews: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 1,
         include: {
           reviewer: { select: { id: true, username: true } },
@@ -45,15 +45,16 @@ export async function getRevision(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
   // Check access
   const isAuthor = revision.article.authorId === requesterId;
-  const isReviewer = requesterRoles.includes('REVIEWER') || requesterRoles.includes('ADMIN');
+  const isReviewer =
+    requesterRoles.includes("REVIEWER") || requesterRoles.includes("ADMIN");
 
   if (!isAuthor && !isReviewer) {
-    throw AppError.forbidden('Access denied');
+    throw AppError.forbidden("Access denied");
   }
 
   const lastReview = revision.reviews[0];
@@ -76,7 +77,7 @@ export async function getRevision(
           id: lastReview.id,
           reviewerId: lastReview.reviewer.id,
           reviewerUsername: lastReview.reviewer.username,
-          action: lastReview.action as 'FEEDBACK' | 'APPROVE',
+          action: lastReview.action as "FEEDBACK" | "APPROVE",
           feedbackText: lastReview.feedbackText,
           createdAt: lastReview.createdAt.toISOString(),
         }
@@ -96,7 +97,7 @@ export async function getRevision(
 export async function updateRevision(
   revisionId: string,
   authorId: string,
-  input: UpdateRevisionInput
+  input: UpdateRevisionInput,
 ): Promise<RevisionDTO> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
@@ -106,18 +107,18 @@ export async function updateRevision(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
   // Verify ownership
   if (revision.article.authorId !== authorId) {
-    throw AppError.forbidden('You can only edit your own revisions');
+    throw AppError.forbidden("You can only edit your own revisions");
   }
 
   // Check if revision is editable
   if (!EDITABLE_STATUSES.includes(revision.status as RevisionStatus)) {
     throw AppError.forbidden(
-      `Cannot edit revision in ${revision.status} status`
+      `Cannot edit revision in ${revision.status} status`,
     );
   }
 
@@ -128,7 +129,7 @@ export async function updateRevision(
     });
 
     if (categories.length !== input.categoryIds.length) {
-      throw AppError.badRequest('One or more categories not found');
+      throw AppError.badRequest("One or more categories not found");
     }
   }
 
@@ -179,7 +180,7 @@ export async function updateRevision(
  */
 export async function deleteRevision(
   revisionId: string,
-  authorId: string
+  authorId: string,
 ): Promise<void> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
@@ -189,17 +190,17 @@ export async function deleteRevision(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
   // Verify ownership
   if (revision.article.authorId !== authorId) {
-    throw AppError.forbidden('You can only delete your own revisions');
+    throw AppError.forbidden("You can only delete your own revisions");
   }
 
   // Only drafts can be deleted
-  if (revision.status !== 'REV_DRAFT') {
-    throw AppError.forbidden('Only draft revisions can be deleted');
+  if (revision.status !== "REV_DRAFT") {
+    throw AppError.forbidden("Only draft revisions can be deleted");
   }
 
   // Delete revision (cascade deletes category links)
@@ -217,7 +218,7 @@ export async function deleteRevision(
  */
 export async function submitToReview(
   revisionId: string,
-  authorId: string
+  authorId: string,
 ): Promise<StatusChangeResponse> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
@@ -227,18 +228,18 @@ export async function submitToReview(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
   // Verify ownership
   if (revision.article.authorId !== authorId) {
-    throw AppError.forbidden('You can only submit your own revisions');
+    throw AppError.forbidden("You can only submit your own revisions");
   }
 
   // Check transition is allowed
-  if (!canTransition(revision.status, 'REV_IN_REVIEW')) {
+  if (!canTransition(revision.status, "REV_IN_REVIEW")) {
     throw AppError.forbidden(
-      `Cannot submit revision from ${revision.status} status`
+      `Cannot submit revision from ${revision.status} status`,
     );
   }
 
@@ -246,14 +247,14 @@ export async function submitToReview(
   await prisma.$transaction([
     prisma.revision.update({
       where: { id: revisionId },
-      data: { status: 'REV_IN_REVIEW' },
+      data: { status: "REV_IN_REVIEW" },
     }),
     // Audit log
     prisma.auditLog.create({
       data: {
         actorId: authorId,
-        action: 'REV_SUBMITTED',
-        targetType: 'revision',
+        action: "REV_SUBMITTED",
+        targetType: "revision",
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
@@ -262,7 +263,7 @@ export async function submitToReview(
     }),
   ]);
 
-  return { status: 'REV_IN_REVIEW' };
+  return { status: "REV_IN_REVIEW" };
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -274,7 +275,7 @@ export async function submitToReview(
  */
 export async function withdrawFromReview(
   revisionId: string,
-  authorId: string
+  authorId: string,
 ): Promise<StatusChangeResponse> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
@@ -284,18 +285,18 @@ export async function withdrawFromReview(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
   // Verify ownership
   if (revision.article.authorId !== authorId) {
-    throw AppError.forbidden('You can only withdraw your own revisions');
+    throw AppError.forbidden("You can only withdraw your own revisions");
   }
 
   // Check transition is allowed
-  if (!canTransition(revision.status, 'REV_WITHDRAWN')) {
+  if (!canTransition(revision.status, "REV_WITHDRAWN")) {
     throw AppError.forbidden(
-      `Cannot withdraw revision from ${revision.status} status`
+      `Cannot withdraw revision from ${revision.status} status`,
     );
   }
 
@@ -303,14 +304,14 @@ export async function withdrawFromReview(
   await prisma.$transaction([
     prisma.revision.update({
       where: { id: revisionId },
-      data: { status: 'REV_WITHDRAWN' },
+      data: { status: "REV_WITHDRAWN" },
     }),
     // Audit log
     prisma.auditLog.create({
       data: {
         actorId: authorId,
-        action: 'REV_WITHDRAWN',
-        targetType: 'revision',
+        action: "REV_WITHDRAWN",
+        targetType: "revision",
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
@@ -319,7 +320,7 @@ export async function withdrawFromReview(
     }),
   ]);
 
-  return { status: 'REV_WITHDRAWN' };
+  return { status: "REV_WITHDRAWN" };
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -331,7 +332,7 @@ export async function withdrawFromReview(
  */
 export async function getMyRevisions(
   userId: string,
-  options: { status?: string; limit: number; cursor?: string }
+  options: { status?: string; limit: number; cursor?: string },
 ): Promise<MyRevisionsResponse> {
   const { status, limit, cursor } = options;
 
@@ -350,12 +351,12 @@ export async function getMyRevisions(
 
   const revisions = await prisma.revision.findMany({
     where,
-    orderBy: { updatedAt: 'desc' },
+    orderBy: { updatedAt: "desc" },
     take: limit + 1, // Get one extra to check if there's more
     include: {
       article: { select: { id: true } },
       reviews: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 1,
         select: { createdAt: true },
       },
@@ -371,7 +372,7 @@ export async function getMyRevisions(
     title: rev.title,
     status: rev.status as RevisionStatus,
     hasUnreadFeedback:
-      rev.status === 'REV_CHANGES_REQUESTED' &&
+      rev.status === "REV_CHANGES_REQUESTED" &&
       rev.reviews[0] !== undefined &&
       rev.reviews[0].createdAt > rev.updatedAt,
     createdAt: rev.createdAt.toISOString(),
@@ -381,9 +382,9 @@ export async function getMyRevisions(
   return {
     items: mappedItems,
     meta: {
-      nextCursor: hasMore && items.length > 0 ? items[items.length - 1]!.id : null,
+      nextCursor:
+        hasMore && items.length > 0 ? items[items.length - 1]!.id : null,
       hasMore,
     },
   };
 }
-

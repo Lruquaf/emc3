@@ -1,12 +1,17 @@
-import type { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
+import type { Request, Response, NextFunction } from "express";
+import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 
-import type { UpdateProfileInput, ChangePasswordInput, DeleteAccountInput } from '@emc3/shared';
+import type {
+  UpdateProfileInput,
+  ChangePasswordInput,
+  DeleteAccountInput,
+} from "@emc3/shared";
 
-import { prisma } from '../lib/prisma.js';
-import * as revisionService from '../services/revision.service.js';
-import * as cloudinaryService from '../services/cloudinary.service.js';
-import { AppError } from '../utils/errors.js';
+import { prisma } from "../lib/prisma.js";
+import * as revisionService from "../services/revision.service.js";
+import * as cloudinaryService from "../services/cloudinary.service.js";
+import { AppError } from "../utils/errors.js";
 
 // ═══════════════════════════════════════════════════════════
 // My Revisions
@@ -19,7 +24,7 @@ import { AppError } from '../utils/errors.js';
 export async function getMyRevisions(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.id;
@@ -52,11 +57,11 @@ export async function getMyRevisions(
 export async function getAvatarUploadSignature(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     if (!cloudinaryService.isCloudinaryConfigured()) {
-      throw AppError.badRequest('Avatar upload is not configured');
+      throw AppError.badRequest("Avatar upload is not configured");
     }
 
     const userId = req.user!.id;
@@ -81,7 +86,7 @@ export async function getAvatarUploadSignature(
 export async function updateProfile(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.id;
@@ -103,17 +108,19 @@ export async function updateProfile(
     if (body.about !== undefined) data.about = body.about;
     if (body.avatarUrl !== undefined) {
       data.avatarUrl = body.avatarUrl;
-      
+
       // Delete old avatar from Cloudinary if it exists and is different
       if (
         currentProfile?.avatarUrl &&
         currentProfile.avatarUrl !== body.avatarUrl &&
-        currentProfile.avatarUrl.includes('cloudinary.com')
+        currentProfile.avatarUrl.includes("cloudinary.com")
       ) {
-        const oldPublicId = cloudinaryService.extractPublicId(currentProfile.avatarUrl);
+        const oldPublicId = cloudinaryService.extractPublicId(
+          currentProfile.avatarUrl,
+        );
         if (oldPublicId) {
           cloudinaryService.deleteImage(oldPublicId).catch((err) => {
-            console.error('Failed to delete old avatar:', err);
+            console.error("Failed to delete old avatar:", err);
           });
         }
       }
@@ -123,12 +130,13 @@ export async function updateProfile(
       const cleanedLinks: Record<string, string> = {};
       if (body.socialLinks) {
         for (const [key, value] of Object.entries(body.socialLinks)) {
-          if (value && value.trim() !== '') {
+          if (value && value.trim() !== "") {
             cleanedLinks[key] = value.trim();
           }
         }
       }
-      data.socialLinks = Object.keys(cleanedLinks).length > 0 ? cleanedLinks : {};
+      data.socialLinks =
+        Object.keys(cleanedLinks).length > 0 ? cleanedLinks : {};
     }
 
     await prisma.userProfile.upsert({
@@ -140,7 +148,11 @@ export async function updateProfile(
         avatarUrl: data.avatarUrl ?? null,
         socialLinks: data.socialLinks ?? {},
       },
-      update: data,
+      update: {
+        ...data,
+        socialLinks:
+          data.socialLinks === null ? Prisma.JsonNull : data.socialLinks,
+      },
     });
 
     const user = await prisma.user.findUnique({
@@ -153,7 +165,7 @@ export async function updateProfile(
     });
 
     if (!user) {
-      res.status(404).json({ code: 'NOT_FOUND', message: 'User not found' });
+      res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
       return;
     }
 
@@ -170,7 +182,8 @@ export async function updateProfile(
           displayName: user.profile?.displayName ?? null,
           about: user.profile?.about ?? null,
           avatarUrl: user.profile?.avatarUrl ?? null,
-          socialLinks: (user.profile?.socialLinks as Record<string, string>) ?? {},
+          socialLinks:
+            (user.profile?.socialLinks as Record<string, string>) ?? {},
         },
       },
     });
@@ -186,7 +199,7 @@ export async function updateProfile(
 export async function changePassword(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.id;
@@ -198,12 +211,12 @@ export async function changePassword(
     });
 
     if (!user || !user.passwordHash) {
-      throw AppError.badRequest('Bu hesap için şifre değiştirme mevcut değil');
+      throw AppError.badRequest("Bu hesap için şifre değiştirme mevcut değil");
     }
 
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
-      throw AppError.unauthorized('Mevcut şifre hatalı');
+      throw AppError.unauthorized("Mevcut şifre hatalı");
     }
 
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
@@ -212,7 +225,7 @@ export async function changePassword(
       data: { passwordHash: newPasswordHash },
     });
 
-    res.json({ message: 'Şifre başarıyla değiştirildi' });
+    res.json({ message: "Şifre başarıyla değiştirildi" });
   } catch (error) {
     next(error);
   }
@@ -225,7 +238,7 @@ export async function changePassword(
 export async function deleteAccount(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user!.id;
@@ -237,23 +250,23 @@ export async function deleteAccount(
     });
 
     if (!user) {
-      throw AppError.notFound('Kullanıcı bulunamadı');
+      throw AppError.notFound("Kullanıcı bulunamadı");
     }
 
     // Check if already deleted
     if (user.isDeleted) {
-      throw AppError.badRequest('Hesap zaten silinmiş');
+      throw AppError.badRequest("Hesap zaten silinmiş");
     }
 
     // Verify password if user has one
     // OAuth users might not have a password
     if (user.passwordHash) {
       if (!password) {
-        throw AppError.badRequest('Şifre gerekli');
+        throw AppError.badRequest("Şifre gerekli");
       }
       const isValid = await bcrypt.compare(password, user.passwordHash);
       if (!isValid) {
-        throw AppError.unauthorized('Şifre hatalı');
+        throw AppError.unauthorized("Şifre hatalı");
       }
     }
     // OAuth users without password can delete without password verification
@@ -261,7 +274,7 @@ export async function deleteAccount(
     // Soft delete + anonymize
     const deletedAt = new Date();
     const deletedUserId = `deleted_${userId.slice(0, 8)}`;
-    
+
     await prisma.$transaction([
       // Anonymize user
       prisma.user.update({
@@ -279,13 +292,13 @@ export async function deleteAccount(
         where: { userId },
         create: {
           userId,
-          displayName: 'Silinmiş Kullanıcı',
+          displayName: "Silinmiş Kullanıcı",
           about: null,
           avatarUrl: null,
           socialLinks: {},
         },
         update: {
-          displayName: 'Silinmiş Kullanıcı',
+          displayName: "Silinmiş Kullanıcı",
           about: null,
           avatarUrl: null,
           socialLinks: {},
@@ -293,9 +306,10 @@ export async function deleteAccount(
       }),
     ]);
 
-    res.json({ message: 'Hesabınız silindi. Tüm kişisel bilgileriniz anonimleştirildi.' });
+    res.json({
+      message: "Hesabınız silindi. Tüm kişisel bilgileriniz anonimleştirildi.",
+    });
   } catch (error) {
     next(error);
   }
 }
-

@@ -4,11 +4,11 @@ import type {
   RevisionReviewDetailDTO,
   ReviewActionResponse,
   RevisionStatus,
-} from '@emc3/shared';
-import { AUDIT_ACTIONS } from '@emc3/shared';
+} from "@emc3/shared";
+import { AUDIT_ACTIONS } from "@emc3/shared";
 
-import { prisma } from '../lib/prisma.js';
-import { AppError } from '../utils/errors.js';
+import { prisma } from "../lib/prisma.js";
+import { AppError } from "../utils/errors.js";
 
 // ═══════════════════════════════════════════════════════════
 // Get Review Queue
@@ -25,7 +25,14 @@ export async function getReviewQueue(options: {
   limit: number;
   cursor?: string;
 }): Promise<ReviewQueueResponse> {
-  const { status = 'REV_IN_REVIEW', authorId, categoryId, sort, limit, cursor } = options;
+  const {
+    status = "REV_IN_REVIEW",
+    authorId,
+    categoryId,
+    sort,
+    limit,
+    cursor,
+  } = options;
 
   // Build where clause
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,7 +61,7 @@ export async function getReviewQueue(options: {
   const revisions = await prisma.revision.findMany({
     where,
     orderBy: {
-      updatedAt: sort === 'oldest' ? 'asc' : 'desc',
+      updatedAt: sort === "oldest" ? "asc" : "desc",
     },
     take: limit + 1,
     include: {
@@ -74,7 +81,7 @@ export async function getReviewQueue(options: {
         },
       },
       reviews: {
-        where: { action: 'FEEDBACK' },
+        where: { action: "FEEDBACK" },
         select: { id: true },
       },
     },
@@ -84,31 +91,35 @@ export async function getReviewQueue(options: {
   const items = revisions.slice(0, limit);
 
   return {
-    items: items.map((rev): ReviewQueueItemDTO => ({
-      id: rev.id,
-      articleId: rev.article.id,
-      title: rev.title,
-      summary: rev.summary,
-      author: {
-        id: rev.article.author.id,
-        username: rev.article.author.username,
-        displayName: rev.article.author.profile?.displayName ?? null,
-        avatarUrl: rev.article.author.profile?.avatarUrl ?? null,
-        isBanned: rev.article.author.ban?.isBanned ?? false,
-      },
-      categories: rev.categories.map((rc) => ({
-        id: rc.category.id,
-        name: rc.category.name,
-        slug: rc.category.slug,
-      })),
-      status: rev.status as RevisionStatus,
-      submittedAt: rev.updatedAt.toISOString(),
-      previousFeedbackCount: rev.reviews.length,
-      isUpdate: rev.article.publishedRevisionId !== null,
-    })),
+    items: items.map(
+      (rev): ReviewQueueItemDTO => ({
+        id: rev.id,
+        articleId: rev.article.id,
+        title: rev.title,
+        summary: rev.summary,
+        author: {
+          id: rev.article.author.id,
+          username: rev.article.author.username,
+          displayName: rev.article.author.profile?.displayName ?? null,
+          avatarUrl: rev.article.author.profile?.avatarUrl ?? null,
+          isBanned: rev.article.author.ban?.isBanned ?? false,
+          isDeleted: rev.article.author.isDeleted ?? false,
+        },
+        categories: rev.categories.map((rc) => ({
+          id: rc.category.id,
+          name: rc.category.name,
+          slug: rc.category.slug,
+        })),
+        status: rev.status as RevisionStatus,
+        submittedAt: rev.updatedAt.toISOString(),
+        previousFeedbackCount: rev.reviews.length,
+        isUpdate: rev.article.publishedRevisionId !== null,
+      }),
+    ),
     meta: {
       totalCount,
-      nextCursor: hasMore && items.length > 0 ? items[items.length - 1]!.id : null,
+      nextCursor:
+        hasMore && items.length > 0 ? items[items.length - 1]!.id : null,
       hasMore,
     },
   };
@@ -121,7 +132,9 @@ export async function getReviewQueue(options: {
 /**
  * Get full revision detail for review
  */
-export async function getRevisionDetail(revisionId: string): Promise<RevisionReviewDetailDTO> {
+export async function getRevisionDetail(
+  revisionId: string,
+): Promise<RevisionReviewDetailDTO> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
@@ -134,8 +147,8 @@ export async function getRevisionDetail(revisionId: string): Promise<RevisionRev
             },
           },
           revisions: {
-            where: { status: 'REV_PUBLISHED' },
-            orderBy: { createdAt: 'desc' },
+            where: { status: "REV_PUBLISHED" },
+            orderBy: { createdAt: "desc" },
             take: 1,
             select: { title: true },
           },
@@ -147,7 +160,7 @@ export async function getRevisionDetail(revisionId: string): Promise<RevisionRev
         },
       },
       reviews: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           reviewer: { select: { id: true, username: true } },
         },
@@ -156,12 +169,16 @@ export async function getRevisionDetail(revisionId: string): Promise<RevisionRev
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
   // Check if this is a valid status for review
-  if (!['REV_IN_REVIEW', 'REV_APPROVED', 'REV_CHANGES_REQUESTED'].includes(revision.status)) {
-    throw AppError.badRequest('This revision is not in a reviewable state');
+  if (
+    !["REV_IN_REVIEW", "REV_APPROVED", "REV_CHANGES_REQUESTED"].includes(
+      revision.status,
+    )
+  ) {
+    throw AppError.badRequest("This revision is not in a reviewable state");
   }
 
   const publishedRevision = revision.article.revisions[0];
@@ -174,7 +191,7 @@ export async function getRevisionDetail(revisionId: string): Promise<RevisionRev
     id: revision.id,
     articleId: revision.article.id,
     status: revision.status as RevisionStatus,
-    
+
     title: revision.title,
     summary: revision.summary,
     contentMarkdown: revision.contentMarkdown,
@@ -184,27 +201,28 @@ export async function getRevisionDetail(revisionId: string): Promise<RevisionRev
       name: rc.category.name,
       slug: rc.category.slug,
     })),
-    
+
     author: {
       id: revision.article.author.id,
       username: revision.article.author.username,
       displayName: revision.article.author.profile?.displayName ?? null,
       avatarUrl: revision.article.author.profile?.avatarUrl ?? null,
       isBanned: revision.article.author.ban?.isBanned ?? false,
+      isDeleted: revision.article.author.isDeleted ?? false,
     },
-    
+
     isNewArticle,
     currentPublishedTitle: publishedRevision?.title ?? null,
-    
+
     feedbackHistory: revision.reviews.map((review) => ({
       id: review.id,
       reviewerId: review.reviewer.id,
       reviewerUsername: review.reviewer.username,
-      action: review.action as 'FEEDBACK' | 'APPROVE',
+      action: review.action as "FEEDBACK" | "APPROVE",
       feedbackText: review.feedbackText,
       createdAt: review.createdAt.toISOString(),
     })),
-    
+
     createdAt: revision.createdAt.toISOString(),
     submittedAt: submittedAt.toISOString(),
     updatedAt: revision.updatedAt.toISOString(),
@@ -221,7 +239,7 @@ export async function getRevisionDetail(revisionId: string): Promise<RevisionRev
 export async function giveFeedback(
   revisionId: string,
   reviewerId: string,
-  feedbackText: string
+  feedbackText: string,
 ): Promise<ReviewActionResponse> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
@@ -231,13 +249,13 @@ export async function giveFeedback(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
-  if (revision.status !== 'REV_IN_REVIEW') {
+  if (revision.status !== "REV_IN_REVIEW") {
     throw AppError.forbidden(
       `Cannot give feedback to revision in ${revision.status} status. ` +
-      'Only revisions in REV_IN_REVIEW status can receive feedback.'
+        "Only revisions in REV_IN_REVIEW status can receive feedback.",
     );
   }
 
@@ -246,7 +264,7 @@ export async function giveFeedback(
     // 1. Update revision status
     prisma.revision.update({
       where: { id: revisionId },
-      data: { status: 'REV_CHANGES_REQUESTED' },
+      data: { status: "REV_CHANGES_REQUESTED" },
     }),
 
     // 2. Create review record
@@ -254,7 +272,7 @@ export async function giveFeedback(
       data: {
         revisionId,
         reviewerId,
-        action: 'FEEDBACK',
+        action: "FEEDBACK",
         feedbackText,
       },
     }),
@@ -264,7 +282,7 @@ export async function giveFeedback(
       data: {
         actorId: reviewerId,
         action: AUDIT_ACTIONS.REV_FEEDBACK,
-        targetType: 'revision',
+        targetType: "revision",
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
@@ -276,8 +294,8 @@ export async function giveFeedback(
 
   return {
     revisionId,
-    newStatus: 'REV_CHANGES_REQUESTED',
-    message: 'Geri bildirim başarıyla gönderildi.',
+    newStatus: "REV_CHANGES_REQUESTED",
+    message: "Geri bildirim başarıyla gönderildi.",
   };
 }
 
@@ -290,7 +308,7 @@ export async function giveFeedback(
  */
 export async function approveRevision(
   revisionId: string,
-  reviewerId: string
+  reviewerId: string,
 ): Promise<ReviewActionResponse> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
@@ -300,13 +318,13 @@ export async function approveRevision(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
-  if (revision.status !== 'REV_IN_REVIEW') {
+  if (revision.status !== "REV_IN_REVIEW") {
     throw AppError.forbidden(
       `Cannot approve revision in ${revision.status} status. ` +
-      'Only revisions in REV_IN_REVIEW status can be approved.'
+        "Only revisions in REV_IN_REVIEW status can be approved.",
     );
   }
 
@@ -315,7 +333,7 @@ export async function approveRevision(
     // 1. Update revision status
     prisma.revision.update({
       where: { id: revisionId },
-      data: { status: 'REV_APPROVED' },
+      data: { status: "REV_APPROVED" },
     }),
 
     // 2. Create review record
@@ -323,7 +341,7 @@ export async function approveRevision(
       data: {
         revisionId,
         reviewerId,
-        action: 'APPROVE',
+        action: "APPROVE",
         feedbackText: null,
       },
     }),
@@ -333,7 +351,7 @@ export async function approveRevision(
       data: {
         actorId: reviewerId,
         action: AUDIT_ACTIONS.REV_APPROVED,
-        targetType: 'revision',
+        targetType: "revision",
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
@@ -344,8 +362,7 @@ export async function approveRevision(
 
   return {
     revisionId,
-    newStatus: 'REV_APPROVED',
-    message: 'Revision başarıyla onaylandı. Yayın için Admin onayı bekliyor.',
+    newStatus: "REV_APPROVED",
+    message: "Revision başarıyla onaylandı. Yayın için Admin onayı bekliyor.",
   };
 }
-

@@ -1,8 +1,8 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from "@prisma/client";
 
-import { prisma } from '../lib/prisma.js';
-import { auditService } from './audit.service.js';
-import { generateUrlSafeToken, hashToken } from '../utils/crypto.js';
+import { prisma } from "../lib/prisma.js";
+import { auditService } from "./audit.service.js";
+import { generateUrlSafeToken, hashToken } from "../utils/crypto.js";
 import {
   AUDIT_ACTIONS,
   type AdminUserDTO,
@@ -15,7 +15,7 @@ import {
   type UpdateRoleResponse,
   type RoleName,
   type AdminDashboardStats,
-} from '@emc3/shared';
+} from "@emc3/shared";
 
 // ═══════════════════════════════════════════════════════════
 // ERROR CLASSES
@@ -24,21 +24,21 @@ import {
 export class NotFoundError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'NotFoundError';
+    this.name = "NotFoundError";
   }
 }
 
 export class ForbiddenError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ForbiddenError';
+    this.name = "ForbiddenError";
   }
 }
 
 export class ConflictError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ConflictError';
+    this.name = "ConflictError";
   }
 }
 
@@ -65,16 +65,16 @@ export async function getDashboardStats(): Promise<AdminDashboardStats> {
     prisma.user.count({ where: { createdAt: { gte: oneWeekAgo } } }),
     prisma.userBan.count({ where: { isBanned: true } }),
     prisma.article.count(),
-    prisma.article.count({ where: { status: 'PUBLISHED' } }),
-    prisma.article.count({ where: { status: 'REMOVED' } }),
-    prisma.revision.count({ where: { status: 'REV_IN_REVIEW' } }),
+    prisma.article.count({ where: { status: "PUBLISHED" } }),
+    prisma.article.count({ where: { status: "REMOVED" } }),
+    prisma.revision.count({ where: { status: "REV_IN_REVIEW" } }),
     prisma.revision.count({
       where: {
-        status: 'REV_APPROVED',
+        status: "REV_APPROVED",
         updatedAt: { gte: oneWeekAgo },
       },
     }),
-    prisma.appeal.count({ where: { status: 'OPEN' } }),
+    prisma.appeal.count({ where: { status: "OPEN" } }),
   ]);
 
   return {
@@ -103,7 +103,7 @@ export async function getDashboardStats(): Promise<AdminDashboardStats> {
 // ═══════════════════════════════════════════════════════════
 
 export async function listUsers(
-  params: AdminUserListQuery
+  params: AdminUserListQuery,
 ): Promise<AdminUserListResponse> {
   const { query, role, isBanned, isDeleted, page = 1, limit = 20 } = params;
   const skip = (page - 1) * limit;
@@ -113,9 +113,9 @@ export async function listUsers(
   // Search by username or email
   if (query) {
     where.OR = [
-      { username: { contains: query, mode: 'insensitive' } },
-      { email: { contains: query, mode: 'insensitive' } },
-      { profile: { displayName: { contains: query, mode: 'insensitive' } } },
+      { username: { contains: query, mode: "insensitive" } },
+      { email: { contains: query, mode: "insensitive" } },
+      { profile: { displayName: { contains: query, mode: "insensitive" } } },
     ];
   }
 
@@ -134,10 +134,7 @@ export async function listUsers(
         { ban: { isBanned: false } },
       ];
       if (where.OR) {
-        where.AND = [
-          { OR: where.OR },
-          { OR: banOr },
-        ];
+        where.AND = [{ OR: where.OR }, { OR: banOr }];
         delete where.OR;
       } else {
         where.OR = banOr;
@@ -164,7 +161,7 @@ export async function listUsers(
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       skip,
       take: limit,
     }),
@@ -199,7 +196,7 @@ export async function getUserDetail(userId: string): Promise<AdminUserDTO> {
   });
 
   if (!user) {
-    throw new NotFoundError('User not found');
+    throw new NotFoundError("User not found");
   }
 
   return mapToAdminUserDTO(user);
@@ -208,11 +205,11 @@ export async function getUserDetail(userId: string): Promise<AdminUserDTO> {
 export async function banUser(
   targetUserId: string,
   actorId: string,
-  reason: string
+  reason: string,
 ): Promise<BanUserResponse> {
   // Cannot ban yourself
   if (targetUserId === actorId) {
-    throw new ForbiddenError('Cannot ban yourself');
+    throw new ForbiddenError("Cannot ban yourself");
   }
 
   // Check target exists
@@ -222,12 +219,12 @@ export async function banUser(
   });
 
   if (!targetUser) {
-    throw new NotFoundError('User not found');
+    throw new NotFoundError("User not found");
   }
 
   // Check if already banned
   if (targetUser.ban?.isBanned) {
-    throw new ConflictError('User is already banned');
+    throw new ConflictError("User is already banned");
   }
 
   // Cannot ban admin (unless you're also admin)
@@ -236,11 +233,11 @@ export async function banUser(
     include: { roles: true },
   });
 
-  const targetIsAdmin = targetUser.roles.some((r) => r.role === 'ADMIN');
-  const actorIsAdmin = actor?.roles.some((r) => r.role === 'ADMIN');
+  const targetIsAdmin = targetUser.roles.some((r) => r.role === "ADMIN");
+  const actorIsAdmin = actor?.roles.some((r) => r.role === "ADMIN");
 
   if (targetIsAdmin && !actorIsAdmin) {
-    throw new ForbiddenError('Only admins can ban other admins');
+    throw new ForbiddenError("Only admins can ban other admins");
   }
 
   const now = new Date();
@@ -269,7 +266,7 @@ export async function banUser(
   await auditService.log({
     actorId,
     action: AUDIT_ACTIONS.USER_BANNED,
-    targetType: 'user',
+    targetType: "user",
     targetId: targetUserId,
     reason,
     meta: { targetUsername: targetUser.username },
@@ -286,7 +283,7 @@ export async function banUser(
 
 export async function unbanUser(
   targetUserId: string,
-  actorId: string
+  actorId: string,
 ): Promise<BanUserResponse> {
   const targetUser = await prisma.user.findUnique({
     where: { id: targetUserId },
@@ -294,11 +291,11 @@ export async function unbanUser(
   });
 
   if (!targetUser) {
-    throw new NotFoundError('User not found');
+    throw new NotFoundError("User not found");
   }
 
   if (!targetUser.ban?.isBanned) {
-    throw new ConflictError('User is not banned');
+    throw new ConflictError("User is not banned");
   }
 
   const now = new Date();
@@ -317,7 +314,7 @@ export async function unbanUser(
   await auditService.log({
     actorId,
     action: AUDIT_ACTIONS.USER_UNBANNED,
-    targetType: 'user',
+    targetType: "user",
     targetId: targetUserId,
     meta: { targetUsername: targetUser.username },
   });
@@ -335,11 +332,11 @@ export async function updateUserRole(
   targetUserId: string,
   actorId: string,
   role: RoleName,
-  action: 'grant' | 'revoke'
+  action: "grant" | "revoke",
 ): Promise<UpdateRoleResponse> {
   // Cannot modify own role
   if (targetUserId === actorId) {
-    throw new ForbiddenError('Cannot modify your own role');
+    throw new ForbiddenError("Cannot modify your own role");
   }
 
   const targetUser = await prisma.user.findUnique({
@@ -348,12 +345,12 @@ export async function updateUserRole(
   });
 
   if (!targetUser) {
-    throw new NotFoundError('User not found');
+    throw new NotFoundError("User not found");
   }
 
   const hasRole = targetUser.roles.some((r) => r.role === role);
 
-  if (action === 'grant') {
+  if (action === "grant") {
     if (hasRole) {
       throw new ConflictError(`User already has ${role} role`);
     }
@@ -367,12 +364,12 @@ export async function updateUserRole(
     }
 
     // Don't allow removing the last admin
-    if (role === 'ADMIN') {
+    if (role === "ADMIN") {
       const adminCount = await prisma.userRole.count({
-        where: { role: 'ADMIN' },
+        where: { role: "ADMIN" },
       });
       if (adminCount <= 1) {
-        throw new ForbiddenError('Cannot remove the last admin');
+        throw new ForbiddenError("Cannot remove the last admin");
       }
     }
 
@@ -385,10 +382,10 @@ export async function updateUserRole(
   await auditService.log({
     actorId,
     action:
-      action === 'grant'
+      action === "grant"
         ? AUDIT_ACTIONS.USER_ROLE_ADDED
         : AUDIT_ACTIONS.USER_ROLE_REMOVED,
-    targetType: 'user',
+    targetType: "user",
     targetId: targetUserId,
     meta: { role, targetUsername: targetUser.username },
   });
@@ -414,7 +411,7 @@ export async function restoreUser(
   targetUserId: string,
   actorId: string,
   newEmail?: string,
-  newUsername?: string
+  newUsername?: string,
 ): Promise<{ userId: string; resetToken: string; message: string }> {
   const targetUser = await prisma.user.findUnique({
     where: { id: targetUserId },
@@ -422,11 +419,11 @@ export async function restoreUser(
   });
 
   if (!targetUser) {
-    throw new NotFoundError('User not found');
+    throw new NotFoundError("User not found");
   }
 
   if (!targetUser.isDeleted) {
-    throw new ConflictError('User account is not deleted');
+    throw new ConflictError("User account is not deleted");
   }
 
   // Store original username for audit log (before it might be updated)
@@ -439,7 +436,7 @@ export async function restoreUser(
       select: { id: true },
     });
     if (emailExists) {
-      throw new ConflictError('Bu email adresi zaten kullanılıyor');
+      throw new ConflictError("Bu email adresi zaten kullanılıyor");
     }
   }
 
@@ -449,7 +446,7 @@ export async function restoreUser(
       select: { id: true },
     });
     if (usernameExists) {
-      throw new ConflictError('Bu kullanıcı adı zaten kullanılıyor');
+      throw new ConflictError("Bu kullanıcı adı zaten kullanılıyor");
     }
   }
 
@@ -482,8 +479,8 @@ export async function restoreUser(
   // Audit log (use original username before restore, or new username if provided)
   await auditService.log({
     actorId,
-    action: 'USER_RESTORED',
-    targetType: 'user',
+    action: "USER_RESTORED",
+    targetType: "user",
     targetId: targetUserId,
     meta: {
       targetUsername: newUsername || originalUsername,
@@ -497,7 +494,7 @@ export async function restoreUser(
     resetToken,
     message: newEmail
       ? `Hesap başarıyla geri yüklendi. Yeni email: ${newEmail}. Şifre sıfırlama token'ı oluşturuldu.`
-      : 'Hesap başarıyla geri yüklendi. Şifre sıfırlama token\'ı oluşturuldu. Not: Email anonimleştirilmiş durumda, admin yeni email belirlemelidir.',
+      : "Hesap başarıyla geri yüklendi. Şifre sıfırlama token'ı oluşturuldu. Not: Email anonimleştirilmiş durumda, admin yeni email belirlemelidir.",
   };
 }
 
@@ -506,7 +503,7 @@ export async function restoreUser(
 // ═══════════════════════════════════════════════════════════
 
 export async function listArticles(
-  params: AdminArticleListQuery
+  params: AdminArticleListQuery,
 ): Promise<AdminArticleListResponse> {
   const { query, status, authorId, page = 1, limit = 20 } = params;
   const skip = (page - 1) * limit;
@@ -519,10 +516,10 @@ export async function listArticles(
   if (query) {
     where.revisions = {
       some: {
-        status: 'REV_PUBLISHED',
+        status: "REV_PUBLISHED",
         OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { summary: { contains: query, mode: 'insensitive' } },
+          { title: { contains: query, mode: "insensitive" } },
+          { summary: { contains: query, mode: "insensitive" } },
         ],
       },
     };
@@ -547,8 +544,8 @@ export async function listArticles(
           },
         },
         revisions: {
-          where: { status: 'REV_PUBLISHED' },
-          orderBy: { createdAt: 'desc' },
+          where: { status: "REV_PUBLISHED" },
+          orderBy: { createdAt: "desc" },
           take: 1,
         },
         _count: {
@@ -560,7 +557,7 @@ export async function listArticles(
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       skip,
       take: limit,
     }),
@@ -581,7 +578,7 @@ export async function listArticles(
 export async function removeArticle(
   articleId: string,
   actorId: string,
-  reason: string
+  reason: string,
 ): Promise<void> {
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -589,23 +586,23 @@ export async function removeArticle(
   });
 
   if (!article) {
-    throw new NotFoundError('Article not found');
+    throw new NotFoundError("Article not found");
   }
 
-  if (article.status === 'REMOVED') {
-    throw new ConflictError('Article is already removed');
+  if (article.status === "REMOVED") {
+    throw new ConflictError("Article is already removed");
   }
 
   await prisma.article.update({
     where: { id: articleId },
-    data: { status: 'REMOVED' },
+    data: { status: "REMOVED" },
   });
 
   // Audit log
   await auditService.log({
     actorId,
     action: AUDIT_ACTIONS.ARTICLE_REMOVED,
-    targetType: 'article',
+    targetType: "article",
     targetId: articleId,
     reason,
     meta: {
@@ -617,7 +614,7 @@ export async function removeArticle(
 
 export async function restoreArticle(
   articleId: string,
-  actorId: string
+  actorId: string,
 ): Promise<void> {
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -625,15 +622,15 @@ export async function restoreArticle(
   });
 
   if (!article) {
-    throw new NotFoundError('Article not found');
+    throw new NotFoundError("Article not found");
   }
 
-  if (article.status !== 'REMOVED') {
-    throw new ConflictError('Article is not removed');
+  if (article.status !== "REMOVED") {
+    throw new ConflictError("Article is not removed");
   }
 
   // Restore to PUBLISHED if has published revision
-  const newStatus = article.publishedRevisionId ? 'PUBLISHED' : 'PUBLISHED';
+  const newStatus = article.publishedRevisionId ? "PUBLISHED" : "PUBLISHED";
 
   await prisma.article.update({
     where: { id: articleId },
@@ -644,7 +641,7 @@ export async function restoreArticle(
   await auditService.log({
     actorId,
     action: AUDIT_ACTIONS.ARTICLE_RESTORED,
-    targetType: 'article',
+    targetType: "article",
     targetId: articleId,
     meta: {
       restoredStatus: newStatus,
@@ -662,24 +659,24 @@ export async function restoreArticle(
 export async function removeOpinion(
   opinionId: string,
   actorId: string,
-  reason: string
+  reason: string,
 ): Promise<void> {
   const opinion = await prisma.opinion.findUnique({
     where: { id: opinionId },
     include: {
       author: true,
       article: {
-        select: { id: true, slug: true },
+        select: { id: true },
       },
     },
   });
 
   if (!opinion) {
-    throw new NotFoundError('Opinion not found');
+    throw new NotFoundError("Opinion not found");
   }
 
   if (opinion.removedAt) {
-    throw new ConflictError('Opinion is already removed');
+    throw new ConflictError("Opinion is already removed");
   }
 
   await prisma.opinion.update({
@@ -691,7 +688,7 @@ export async function removeOpinion(
   await auditService.log({
     actorId,
     action: AUDIT_ACTIONS.OPINION_REMOVED,
-    targetType: 'opinion',
+    targetType: "opinion",
     targetId: opinionId,
     reason,
     meta: {
@@ -708,7 +705,7 @@ export async function removeOpinion(
 export async function removeOpinionReply(
   opinionId: string,
   actorId: string,
-  reason: string
+  reason: string,
 ): Promise<void> {
   const reply = await prisma.opinionReply.findUnique({
     where: { opinionId },
@@ -725,11 +722,11 @@ export async function removeOpinionReply(
   });
 
   if (!reply) {
-    throw new NotFoundError('Opinion reply not found');
+    throw new NotFoundError("Opinion reply not found");
   }
 
   if (reply.removedAt) {
-    throw new ConflictError('Opinion reply is already removed');
+    throw new ConflictError("Opinion reply is already removed");
   }
 
   await prisma.opinionReply.update({
@@ -741,7 +738,7 @@ export async function removeOpinionReply(
   await auditService.log({
     actorId,
     action: AUDIT_ACTIONS.OPINION_REPLY_REMOVED,
-    targetType: 'opinion_reply',
+    targetType: "opinion_reply",
     targetId: opinionId,
     reason,
     meta: {
@@ -767,7 +764,11 @@ function mapToAdminUserDTO(user: {
   createdAt: Date;
   profile: { displayName: string | null; avatarUrl: string | null } | null;
   roles: { role: string }[];
-  ban: { isBanned: boolean; reason: string | null; bannedAt: Date | null } | null;
+  ban: {
+    isBanned: boolean;
+    reason: string | null;
+    bannedAt: Date | null;
+  } | null;
   _count: { articles: number; opinions: number };
 }): AdminUserDTO {
   return {
@@ -801,7 +802,7 @@ function mapToAdminArticleDTO(article: any): AdminArticleDTO {
 
   return {
     id: article.id,
-    status: article.status as 'PUBLISHED' | 'REMOVED',
+    status: article.status as "PUBLISHED" | "REMOVED",
     author: {
       id: article.author.id,
       username: article.author.username,
@@ -809,8 +810,8 @@ function mapToAdminArticleDTO(article: any): AdminArticleDTO {
       isBanned: article.author.ban?.isBanned ?? false,
       isDeleted: article.author.isDeleted ?? false,
     },
-    title: publishedRevision?.title ?? 'Untitled',
-    summary: publishedRevision?.summary ?? '',
+    title: publishedRevision?.title ?? "Untitled",
+    summary: publishedRevision?.summary ?? "",
     publishedAt: article.lastPublishedAt?.toISOString() ?? null,
     counts: {
       likes: article._count.likes,

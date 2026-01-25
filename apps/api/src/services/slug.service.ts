@@ -1,24 +1,24 @@
-import slugifyLib from 'slugify';
+import slugifyLib from "slugify";
 
-import { prisma } from '../lib/prisma.js';
+import { prisma } from "../lib/prisma.js";
 
 // ═══════════════════════════════════════════════════════════
 // Turkish Character Mapping
 // ═══════════════════════════════════════════════════════════
 
 const TURKISH_CHAR_MAP: Record<string, string> = {
-  ç: 'c',
-  Ç: 'c',
-  ğ: 'g',
-  Ğ: 'g',
-  ı: 'i',
-  İ: 'i',
-  ö: 'o',
-  Ö: 'o',
-  ş: 's',
-  Ş: 's',
-  ü: 'u',
-  Ü: 'u',
+  ç: "c",
+  Ç: "c",
+  ğ: "g",
+  Ğ: "g",
+  ı: "i",
+  İ: "i",
+  ö: "o",
+  Ö: "o",
+  ş: "s",
+  Ş: "s",
+  ü: "u",
+  Ü: "u",
 };
 
 /**
@@ -26,9 +26,9 @@ const TURKISH_CHAR_MAP: Record<string, string> = {
  */
 function replaceTurkishChars(text: string): string {
   return text
-    .split('')
+    .split("")
     .map((char) => TURKISH_CHAR_MAP[char] || char)
-    .join('');
+    .join("");
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -58,39 +58,12 @@ export function slugify(text: string): string {
 
 /**
  * Generate a unique slug for an article
- * If the base slug exists, append a numeric suffix
+ * Note: Article slug was removed, this function is kept for compatibility but returns base slug only
  */
 export async function generateUniqueSlug(title: string): Promise<string> {
   const baseSlug = slugify(title);
-
-  // Limit base slug length to allow room for suffix
-  const truncatedBase = baseSlug.slice(0, 200);
-
-  let slug = truncatedBase;
-  let suffix = 0;
-
-  while (true) {
-    const existing = await prisma.article.findUnique({
-      where: { slug },
-      select: { id: true },
-    });
-
-    if (!existing) {
-      return slug;
-    }
-
-    suffix++;
-    slug = `${truncatedBase}-${suffix}`;
-
-    // Safety limit to prevent infinite loop
-    if (suffix > 1000) {
-      // Fallback: add timestamp
-      slug = `${truncatedBase}-${Date.now()}`;
-      break;
-    }
-  }
-
-  return slug;
+  // Limit base slug length
+  return baseSlug.slice(0, 200);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -103,4 +76,3 @@ export async function generateUniqueSlug(title: string): Promise<string> {
 export function isValidSlug(slug: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
 }
-

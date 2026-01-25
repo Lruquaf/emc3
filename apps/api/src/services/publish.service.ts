@@ -3,11 +3,11 @@ import type {
   PublishQueueResponse,
   PublishResponse,
   RevisionStatus,
-} from '@emc3/shared';
-import { AUDIT_ACTIONS } from '@emc3/shared';
+} from "@emc3/shared";
+import { AUDIT_ACTIONS } from "@emc3/shared";
 
-import { prisma } from '../lib/prisma.js';
-import { AppError } from '../utils/errors.js';
+import { prisma } from "../lib/prisma.js";
+import { AppError } from "../utils/errors.js";
 
 // ═══════════════════════════════════════════════════════════
 // Get Publish Queue
@@ -25,7 +25,7 @@ export async function getPublishQueue(options: {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {
-    status: 'REV_APPROVED',
+    status: "REV_APPROVED",
   };
 
   if (cursor) {
@@ -39,7 +39,7 @@ export async function getPublishQueue(options: {
   const revisions = await prisma.revision.findMany({
     where,
     orderBy: {
-      updatedAt: sort === 'oldest' ? 'asc' : 'desc',
+      updatedAt: sort === "oldest" ? "asc" : "desc",
     },
     take: limit + 1,
     include: {
@@ -59,8 +59,8 @@ export async function getPublishQueue(options: {
         },
       },
       reviews: {
-        where: { action: 'APPROVE' },
-        orderBy: { createdAt: 'desc' },
+        where: { action: "APPROVE" },
+        orderBy: { createdAt: "desc" },
         take: 1,
         include: {
           reviewer: { select: { id: true, username: true } },
@@ -82,32 +82,37 @@ export async function getPublishQueue(options: {
         articleId: rev.article.id,
         title: rev.title,
         summary: rev.summary,
+        articleSlug: null, // Article slug was removed
         author: {
           id: rev.article.author.id,
           username: rev.article.author.username,
           displayName: rev.article.author.profile?.displayName ?? null,
           avatarUrl: rev.article.author.profile?.avatarUrl ?? null,
           isBanned: rev.article.author.ban?.isBanned ?? false,
+          isDeleted: rev.article.author.isDeleted ?? false,
         },
         categories: rev.categories.map((rc) => ({
           id: rc.category.id,
           name: rc.category.name,
           slug: rc.category.slug,
         })),
-        approvedAt: approvalReview?.createdAt.toISOString() ?? rev.updatedAt.toISOString(),
+        approvedAt:
+          approvalReview?.createdAt.toISOString() ??
+          rev.updatedAt.toISOString(),
         approvedBy: approvalReview
           ? {
               id: approvalReview.reviewer.id,
               username: approvalReview.reviewer.username,
             }
-          : { id: '', username: 'unknown' },
+          : { id: "", username: "unknown" },
         isNewArticle,
         isUpdate: !isNewArticle,
       };
     }),
     meta: {
       totalCount,
-      nextCursor: hasMore && items.length > 0 ? items[items.length - 1]!.id : null,
+      nextCursor:
+        hasMore && items.length > 0 ? items[items.length - 1]!.id : null,
       hasMore,
     },
   };
@@ -122,7 +127,7 @@ export async function getPublishQueue(options: {
  */
 export async function publishRevision(
   revisionId: string,
-  adminId: string
+  adminId: string,
 ): Promise<PublishResponse> {
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
@@ -130,7 +135,6 @@ export async function publishRevision(
       article: {
         select: {
           id: true,
-          slug: true,
           publishedRevisionId: true,
           firstPublishedAt: true,
         },
@@ -139,13 +143,13 @@ export async function publishRevision(
   });
 
   if (!revision) {
-    throw AppError.notFound('Revision not found');
+    throw AppError.notFound("Revision not found");
   }
 
-  if (revision.status !== 'REV_APPROVED') {
+  if (revision.status !== "REV_APPROVED") {
     throw AppError.forbidden(
       `Cannot publish revision in ${revision.status} status. ` +
-      'Only approved revisions can be published.'
+        "Only approved revisions can be published.",
     );
   }
 
@@ -159,7 +163,7 @@ export async function publishRevision(
     // 1. Update revision status to PUBLISHED
     prisma.revision.update({
       where: { id: revisionId },
-      data: { status: 'REV_PUBLISHED' },
+      data: { status: "REV_PUBLISHED" },
     }),
 
     // 2. Update article
@@ -167,7 +171,7 @@ export async function publishRevision(
       where: { id: article.id },
       data: {
         publishedRevisionId: revisionId,
-        status: 'PUBLISHED',
+        status: "PUBLISHED",
         firstPublishedAt: isFirstPublish ? now : article.firstPublishedAt,
         lastPublishedAt: now,
       },
@@ -178,7 +182,7 @@ export async function publishRevision(
       data: {
         actorId: adminId,
         action: AUDIT_ACTIONS.REV_PUBLISHED,
-        targetType: 'revision',
+        targetType: "revision",
         targetId: revisionId,
         meta: {
           articleId: article.id,
@@ -193,8 +197,9 @@ export async function publishRevision(
     articleId: article.id,
     revisionId,
     isFirstPublish,
-    firstPublishedAt: isFirstPublish ? now.toISOString() : article.firstPublishedAt!.toISOString(),
+    firstPublishedAt: isFirstPublish
+      ? now.toISOString()
+      : article.firstPublishedAt!.toISOString(),
     lastPublishedAt: now.toISOString(),
   };
 }
-
