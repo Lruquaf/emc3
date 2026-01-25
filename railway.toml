@@ -1,0 +1,38 @@
+# Railway Configuration for e=mc³ API
+# Bu dosya Railway'de otomatik deployment ve migration için kullanılır
+
+[build]
+# Build komutu - monorepo için
+builder = "NIXPACKS"
+buildCommand = "pnpm install && pnpm build:api"
+
+[deploy]
+# Start komutu - API'yi başlatmak için
+startCommand = "cd apps/api && node dist/index.js"
+
+# Health check endpoint
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 100
+
+# Restart policy
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# ═══════════════════════════════════════════════════════════
+# Otomatik Migration Hook
+# ═══════════════════════════════════════════════════════════
+# Railway deployment sonrası otomatik olarak migration'ları çalıştırır
+[deploy.hooks]
+# Post-deploy hook - Build ve deployment sonrası çalışır
+postdeploy = "cd apps/api && pnpm db:generate && pnpm db:migrate"
+
+# ═══════════════════════════════════════════════════════════
+# Environment Variables (Opsiyonel - Railway dashboard'dan da eklenebilir)
+# ═══════════════════════════════════════════════════════════
+# Not: Hassas bilgileri (JWT_SECRET, API keys) Railway dashboard'dan ekleyin
+# Burada sadece genel ayarları belirtebilirsiniz
+
+[env]
+NODE_ENV = "staging"
+PORT = "3000"
+RATE_LIMIT_ENABLED = "true"
