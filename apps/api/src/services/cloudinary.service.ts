@@ -1,11 +1,15 @@
-import { v2 as cloudinary } from 'cloudinary';
-import { env } from '../config/env.js';
+import { v2 as cloudinary } from "cloudinary";
+import { env } from "../config/env.js";
 
 // ═══════════════════════════════════════════════════════════
 // Cloudinary Configuration
 // ═══════════════════════════════════════════════════════════
 
-if (env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET) {
+if (
+  env.CLOUDINARY_CLOUD_NAME &&
+  env.CLOUDINARY_API_KEY &&
+  env.CLOUDINARY_API_SECRET
+) {
   cloudinary.config({
     cloud_name: env.CLOUDINARY_CLOUD_NAME,
     api_key: env.CLOUDINARY_API_KEY,
@@ -39,7 +43,7 @@ export function generateUploadSignature(userId: string): {
   folder: string;
 } {
   if (!isCloudinaryConfigured()) {
-    throw new Error('Cloudinary is not configured');
+    throw new Error("Cloudinary is not configured");
   }
 
   const timestamp = Math.round(new Date().getTime() / 1000);
@@ -50,20 +54,20 @@ export function generateUploadSignature(userId: string): {
     {
       timestamp,
       folder,
-      allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
       max_file_size: 5 * 1024 * 1024, // 5MB
       transformation: [
         {
           width: 400,
           height: 400,
-          crop: 'fill',
-          gravity: 'face',
-          quality: 'auto',
-          format: 'auto',
+          crop: "fill",
+          gravity: "face",
+          quality: "auto",
+          format: "auto",
         },
       ],
     },
-    env.CLOUDINARY_API_SECRET!
+    env.CLOUDINARY_API_SECRET!,
   );
 
   return {
@@ -84,7 +88,7 @@ export async function deleteImage(publicId: string): Promise<void> {
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
-    console.error('Failed to delete image from Cloudinary:', error);
+    console.error("Failed to delete image from Cloudinary:", error);
     // Don't throw - deletion is best effort
   }
 }
@@ -95,7 +99,7 @@ export async function deleteImage(publicId: string): Promise<void> {
 export function extractPublicId(url: string): string | null {
   try {
     const match = url.match(/\/v\d+\/(.+)\.(jpg|jpeg|png|webp)/i);
-    return match ? match[1] : null;
+    return match ? (match[1] ?? null) : null;
   } catch {
     return null;
   }
