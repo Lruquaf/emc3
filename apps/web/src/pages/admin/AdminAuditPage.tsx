@@ -199,6 +199,12 @@ function AuditLogItem({ log }: { log: AuditLogDTO }) {
   );
 }
 
+function toMetaNode(v: unknown): React.ReactNode {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
+  return String(v);
+}
+
 function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
   const meta = log.meta || {};
   const items: React.ReactNode[] = [];
@@ -208,7 +214,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="targetUsername">
         <span className="text-text/70">Kullanıcı:</span>{' '}
-        <span className="text-text font-medium">@{meta.targetUsername}</span>
+        <span className="text-text font-medium">@{String(meta.targetUsername)}</span>
       </div>
     );
   }
@@ -216,7 +222,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="username">
         <span className="text-text/70">Kullanıcı:</span>{' '}
-        <span className="text-text font-medium">@{meta.username}</span>
+        <span className="text-text font-medium">@{String(meta.username)}</span>
       </div>
     );
   }
@@ -224,7 +230,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="userId">
         <span className="text-text/70">Kullanıcı ID:</span>{' '}
-        <span className="text-text font-mono text-xs">{meta.userId}</span>
+        <span className="text-text font-mono text-xs">{toMetaNode(meta.userId)}</span>
       </div>
     );
   }
@@ -234,7 +240,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
       items.push(
         <div key="newEmail">
           <span className="text-text/70">Yeni Email:</span>{' '}
-          <span className="text-text font-medium">{meta.newEmail}</span>
+          <span className="text-text font-medium">{toMetaNode(meta.newEmail)}</span>
         </div>
       );
     }
@@ -242,7 +248,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
       items.push(
         <div key="newUsername">
           <span className="text-text/70">Yeni Kullanıcı Adı:</span>{' '}
-          <span className="text-text font-medium">@{meta.newUsername}</span>
+          <span className="text-text font-medium">@{String(meta.newUsername)}</span>
         </div>
       );
     }
@@ -251,7 +257,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="role">
         <span className="text-text/70">Rol:</span>{' '}
-        <span className="text-text font-medium">{meta.role}</span>
+        <span className="text-text font-medium">{toMetaNode(meta.role)}</span>
       </div>
     );
   }
@@ -261,7 +267,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="articleId">
         <span className="text-text/70">Makale ID:</span>{' '}
-        <span className="text-text font-medium">{meta.articleId}</span>
+        <span className="text-text font-medium">{toMetaNode(meta.articleId)}</span>
       </div>
     );
   }
@@ -269,15 +275,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="slug">
         <span className="text-text/70">Makale:</span>{' '}
-        <span className="text-text font-medium">{meta.slug}</span>
-      </div>
-    );
-  }
-  if (meta.articleId) {
-    items.push(
-      <div key="articleId">
-        <span className="text-text/70">Makale ID:</span>{' '}
-        <span className="text-text font-mono text-xs">{meta.articleId}</span>
+        <span className="text-text font-medium">{toMetaNode(meta.slug)}</span>
       </div>
     );
   }
@@ -285,7 +283,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="authorUsername">
         <span className="text-text/70">Yazar:</span>{' '}
-        <span className="text-text font-medium">@{meta.authorUsername}</span>
+        <span className="text-text font-medium">@{String(meta.authorUsername)}</span>
       </div>
     );
   }
@@ -293,7 +291,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="authorId">
         <span className="text-text/70">Yazar ID:</span>{' '}
-        <span className="text-text font-mono text-xs">{meta.authorId}</span>
+        <span className="text-text font-mono text-xs">{toMetaNode(meta.authorId)}</span>
       </div>
     );
   }
@@ -303,9 +301,9 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="categoryName">
         <span className="text-text/70">Kategori:</span>{' '}
-        <span className="text-text font-medium">{meta.categoryName}</span>
-        {meta.categorySlug && (
-          <span className="text-muted ml-1">({meta.categorySlug})</span>
+        <span className="text-text font-medium">{toMetaNode(meta.categoryName)}</span>
+        {meta.categorySlug != null && (
+          <span className="text-muted ml-1">({String(meta.categorySlug)})</span>
         )}
       </div>
     );
@@ -314,9 +312,9 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="name">
         <span className="text-text/70">Kategori:</span>{' '}
-        <span className="text-text font-medium">{meta.name}</span>
-        {meta.slug && (
-          <span className="text-muted ml-1">({meta.slug})</span>
+        <span className="text-text font-medium">{toMetaNode(meta.name)}</span>
+        {meta.slug != null && (
+          <span className="text-muted ml-1">({String(meta.slug)})</span>
         )}
       </div>
     );
@@ -325,7 +323,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="deletedCategoryCount">
         <span className="text-text/70">Silinen Kategori:</span>{' '}
-        <span className="text-text font-medium">{meta.deletedCategoryCount} adet</span>
+        <span className="text-text font-medium">{toMetaNode(meta.deletedCategoryCount)} adet</span>
       </div>
     );
   }
@@ -333,7 +331,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="reassignedRevisionCount">
         <span className="text-text/70">Yeniden Atanan Revizyon:</span>{' '}
-        <span className="text-text font-medium">{meta.reassignedRevisionCount} adet</span>
+        <span className="text-text font-medium">{toMetaNode(meta.reassignedRevisionCount)} adet</span>
       </div>
     );
   }
@@ -341,18 +339,18 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="parentChange">
         <span className="text-text/70">Parent Değişimi:</span>{' '}
-        {meta.previousParentName ? (
-          <span className="text-text">{meta.previousParentName}</span>
-        ) : meta.previousParentId ? (
-          <span className="text-text font-mono text-xs">{meta.previousParentId}</span>
+        {meta.previousParentName != null ? (
+          <span className="text-text">{toMetaNode(meta.previousParentName)}</span>
+        ) : meta.previousParentId != null ? (
+          <span className="text-text font-mono text-xs">{toMetaNode(meta.previousParentId)}</span>
         ) : (
           <span className="text-muted">(yok)</span>
         )}
         {' → '}
-        {meta.newParentName ? (
-          <span className="text-text">{meta.newParentName}</span>
-        ) : meta.newParentId ? (
-          <span className="text-text font-mono text-xs">{meta.newParentId}</span>
+        {meta.newParentName != null ? (
+          <span className="text-text">{toMetaNode(meta.newParentName)}</span>
+        ) : meta.newParentId != null ? (
+          <span className="text-text font-mono text-xs">{toMetaNode(meta.newParentId)}</span>
         ) : (
           <span className="text-muted">(kök)</span>
         )}
@@ -363,7 +361,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="parentId">
         <span className="text-text/70">Parent ID:</span>{' '}
-        <span className="text-text font-mono text-xs">{meta.parentId}</span>
+        <span className="text-text font-mono text-xs">{toMetaNode(meta.parentId)}</span>
       </div>
     );
   }
@@ -373,7 +371,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="opinionId">
         <span className="text-text/70">Görüş ID:</span>{' '}
-        <span className="text-text font-mono text-xs">{meta.opinionId}</span>
+        <span className="text-text font-mono text-xs">{toMetaNode(meta.opinionId)}</span>
       </div>
     );
   }
@@ -381,7 +379,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="replierUsername">
         <span className="text-text/70">Yanıtlayan:</span>{' '}
-        <span className="text-text font-medium">@{meta.replierUsername}</span>
+        <span className="text-text font-medium">@{String(meta.replierUsername)}</span>
       </div>
     );
   }
@@ -401,7 +399,7 @@ function formatMetaInfo(log: AuditLogDTO): React.ReactNode {
     items.push(
       <div key="feedbackLength">
         <span className="text-text/70">Geri Bildirim Uzunluğu:</span>{' '}
-        <span className="text-text font-medium">{meta.feedbackLength} karakter</span>
+        <span className="text-text font-medium">{toMetaNode(meta.feedbackLength)} karakter</span>
       </div>
     );
   }

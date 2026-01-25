@@ -24,7 +24,7 @@
     "build": "pnpm -r build",
     "build:api": "pnpm --filter @emc3/api build",
     "build:api:deploy": "pnpm --filter @emc3/shared build && pnpm --filter @emc3/api db:generate && pnpm --filter @emc3/api build",
-    "build:web": "pnpm --filter @emc3/web build",
+    "build:web": "pnpm --filter @emc3/shared build && pnpm --filter @emc3/web build",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "typecheck": "pnpm -r typecheck",
