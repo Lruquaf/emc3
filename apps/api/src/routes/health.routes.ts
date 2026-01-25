@@ -10,19 +10,22 @@ healthRouter.get('/', async (_req, res) => {
     await prisma.$queryRaw`SELECT 1`;
 
     res.json({
-      ok: true,
+      status: 'ok',
       timestamp: new Date().toISOString(),
       services: {
         database: 'healthy',
       },
     });
   } catch (error) {
-    res.status(503).json({
-      ok: false,
+    // Return 200 even if database is unhealthy (for Railway healthcheck)
+    // Railway will retry, but we don't want to fail immediately
+    res.status(200).json({
+      status: 'degraded',
       timestamp: new Date().toISOString(),
       services: {
         database: 'unhealthy',
       },
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });

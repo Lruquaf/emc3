@@ -49,8 +49,8 @@ app.use(globalRateLimit);
 // Routes
 // ═══════════════════════════════════════════════════════════
 
-// Health check (no version prefix)
-app.use('/health', healthRouter);
+// Health check
+app.use('/api/v1/health', healthRouter);
 
 // API v1 routes
 app.use('/api/v1/auth', authRouter);
