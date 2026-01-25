@@ -3,8 +3,9 @@
 
 [build]
 # Build komutu - monorepo için
+# ÖNEMLİ: Önce shared package'ı build et, sonra Prisma generate, sonra API build
 builder = "NIXPACKS"
-buildCommand = "pnpm install && pnpm build:api"
+buildCommand = "pnpm install && pnpm build:api:deploy"
 
 [deploy]
 # Start komutu - API'yi başlatmak için
