@@ -80,7 +80,6 @@ export async function getPublishQueue(options: {
       return {
         id: rev.id,
         articleId: rev.article.id,
-        articleSlug: rev.article.slug,
         title: rev.title,
         summary: rev.summary,
         author: {
@@ -183,7 +182,6 @@ export async function publishRevision(
         targetId: revisionId,
         meta: {
           articleId: article.id,
-          articleSlug: article.slug,
           isFirstPublish,
           prevPublishedRevisionId,
         },
@@ -193,7 +191,6 @@ export async function publishRevision(
 
   return {
     articleId: article.id,
-    articleSlug: article.slug,
     revisionId,
     isFirstPublish,
     firstPublishedAt: isFirstPublish ? now.toISOString() : article.firstPublishedAt!.toISOString(),

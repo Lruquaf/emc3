@@ -61,7 +61,6 @@ export async function getRevision(
   return {
     id: revision.id,
     articleId: revision.article.id,
-    articleSlug: revision.article.slug,
     status: revision.status as RevisionStatus,
     title: revision.title,
     summary: revision.summary,
@@ -223,7 +222,7 @@ export async function submitToReview(
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
-      article: { select: { id: true, slug: true, authorId: true } },
+      article: { select: { id: true, authorId: true } },
     },
   });
 
@@ -258,7 +257,6 @@ export async function submitToReview(
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
-          articleSlug: revision.article.slug,
         },
       },
     }),
@@ -281,7 +279,7 @@ export async function withdrawFromReview(
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
-      article: { select: { id: true, slug: true, authorId: true } },
+      article: { select: { id: true, authorId: true } },
     },
   });
 
@@ -316,7 +314,6 @@ export async function withdrawFromReview(
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
-          articleSlug: revision.article.slug,
         },
       },
     }),
@@ -356,7 +353,7 @@ export async function getMyRevisions(
     orderBy: { updatedAt: 'desc' },
     take: limit + 1, // Get one extra to check if there's more
     include: {
-      article: { select: { id: true, slug: true } },
+      article: { select: { id: true } },
       reviews: {
         orderBy: { createdAt: 'desc' },
         take: 1,
@@ -371,7 +368,6 @@ export async function getMyRevisions(
   const mappedItems: RevisionListItemDTO[] = items.map((rev) => ({
     id: rev.id,
     articleId: rev.article.id,
-    articleSlug: rev.article.slug,
     title: rev.title,
     status: rev.status as RevisionStatus,
     hasUnreadFeedback:

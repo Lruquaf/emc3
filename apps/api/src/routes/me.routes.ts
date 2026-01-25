@@ -7,7 +7,7 @@ import {
   myRevisionsQuerySchema,
   updateProfileSchema,
   changePasswordSchema,
-  deactivateAccountSchema,
+  deleteAccountSchema,
 } from '@emc3/shared';
 
 export const meRouter = Router();
@@ -21,6 +21,12 @@ meRouter.patch(
   requireAuth,
   validate(updateProfileSchema),
   meController.updateProfile
+);
+
+meRouter.get(
+  '/avatar/upload-signature',
+  requireAuth,
+  meController.getAvatarUploadSignature
 );
 
 // ═══════════════════════════════════════════════════════════
@@ -46,9 +52,9 @@ meRouter.post(
 );
 
 meRouter.post(
-  '/deactivate',
+  '/delete-account',
   requireAuth,
-  validate(deactivateAccountSchema),
-  meController.deactivateAccount
+  validate(deleteAccountSchema),
+  meController.deleteAccount
 );
 

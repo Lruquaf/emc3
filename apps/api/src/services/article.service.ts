@@ -8,7 +8,6 @@ import type {
 } from '@emc3/shared';
 
 import { prisma } from '../lib/prisma.js';
-import { generateUniqueSlug } from './slug.service.js';
 import { AppError } from '../utils/errors.js';
 
 // ═══════════════════════════════════════════════════════════
@@ -33,15 +32,11 @@ export async function createArticle(
     throw AppError.badRequest('One or more categories not found');
   }
 
-  // Generate unique slug
-  const slug = await generateUniqueSlug(title);
-
   // Create article with initial revision in transaction
   const result = await prisma.$transaction(async (tx) => {
     // Create article
     const article = await tx.article.create({
       data: {
-        slug,
         authorId,
         status: 'PUBLISHED', // Default, will show when has published revision
       },
@@ -67,21 +62,20 @@ export async function createArticle(
 
   return {
     articleId: result.article.id,
-    slug: result.article.slug,
     revisionId: result.revision.id,
     status: 'REV_DRAFT',
   };
 }
 
 /**
- * Get article by slug (public read)
+ * Get article by ID (public read)
  */
-export async function getArticleBySlug(
-  slug: string,
+export async function getArticleById(
+  articleId: string,
   viewerId?: string
 ): Promise<ArticleReadDTO> {
   const article = await prisma.article.findUnique({
-    where: { slug },
+    where: { id: articleId },
     include: {
       author: {
         include: {
@@ -151,13 +145,13 @@ export async function getArticleBySlug(
   return {
     article: {
       id: article.id,
-      slug: article.slug,
       author: {
         id: article.author.id,
         username: article.author.username,
         displayName: article.author.profile?.displayName ?? null,
         avatarUrl: article.author.profile?.avatarUrl ?? null,
         isBanned: article.author.ban?.isBanned ?? false,
+        isDeleted: article.author.isDeleted,
       },
       title: publishedRevision.title,
       summary: publishedRevision.summary,
@@ -310,9 +304,9 @@ export async function getRevisionHistory(
 }
 
 /**
- * Get article by ID (for internal use)
+ * Get article by ID (for internal use - minimal data only)
  */
-export async function getArticleById(articleId: string) {
+export async function getArticleByIdInternal(articleId: string) {
   return prisma.article.findUnique({
     where: { id: articleId },
     include: {

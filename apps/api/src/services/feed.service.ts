@@ -303,6 +303,7 @@ export async function searchUsers(
       about: user.profile?.about ?? null,
       isFollowing: viewerFollowing.has(user.id),
       isBanned: user.ban?.isBanned ?? false,
+      isDeleted: user.isDeleted,
     })),
     meta: {
       nextCursor: hasMore

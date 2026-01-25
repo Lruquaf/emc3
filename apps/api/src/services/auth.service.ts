@@ -189,6 +189,11 @@ export class AuthService {
       throw AppError.unauthorized('Invalid email or password');
     }
 
+    // Check if account is deleted
+    if (user.isDeleted) {
+      throw AppError.unauthorized('Bu hesap silinmiş');
+    }
+
     const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
       throw AppError.unauthorized('Invalid email or password');
@@ -208,7 +213,7 @@ export class AuthService {
       where: { email: email.toLowerCase() },
     });
 
-    if (!user) {
+    if (!user || user.isDeleted) {
       return; // Silently fail to prevent enumeration
     }
 
@@ -232,6 +237,11 @@ export class AuthService {
 
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { tokenHash },
+      include: {
+        user: {
+          select: { isDeleted: true },
+        },
+      },
     });
 
     if (!resetToken) {
@@ -244,6 +254,11 @@ export class AuthService {
 
     if (new Date() > resetToken.expiresAt) {
       throw AppError.badRequest('Reset token has expired');
+    }
+
+    // Check if account is deleted
+    if (resetToken.user.isDeleted) {
+      throw AppError.unauthorized('Bu hesap silinmiş');
     }
 
     const passwordHash = await hashPassword(newPassword);
@@ -349,6 +364,10 @@ export class AuthService {
 
     if (oauthAccount) {
       user = oauthAccount.user;
+      // Check if account is deleted
+      if (user.isDeleted) {
+        throw AppError.unauthorized('Bu hesap silinmiş');
+      }
     } else {
       // Check if email already exists
       const existingUser = await prisma.user.findUnique({
@@ -361,6 +380,10 @@ export class AuthService {
       });
 
       if (existingUser) {
+        // Check if account is deleted
+        if (existingUser.isDeleted) {
+          throw AppError.unauthorized('Bu hesap silinmiş');
+        }
         // Link OAuth account to existing user
         await prisma.oAuthAccount.create({
           data: {

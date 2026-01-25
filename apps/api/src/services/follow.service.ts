@@ -291,6 +291,7 @@ export async function getUserProfile(
     },
     isFollowing: isFollowingResult,
     isBanned: user.ban?.isBanned ?? false,
+    isDeleted: user.isDeleted,
     createdAt: user.createdAt.toISOString(),
   };
 }

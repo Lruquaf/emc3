@@ -18,6 +18,7 @@ import {
   adminArticleListQuerySchema,
   banUserSchema,
   updateRoleSchema,
+  restoreUserSchema,
   removeArticleSchema,
   removeOpinionSchema,
   removeOpinionReplySchema,
@@ -80,6 +81,15 @@ adminRouter.post(
   validateParams(userIdParamSchema),
   validate(updateRoleSchema),
   adminController.updateUserRole
+);
+
+// Restore deleted user (ADMIN only)
+adminRouter.post(
+  '/users/:id/restore',
+  requireAdmin,
+  validateParams(userIdParamSchema),
+  validate(restoreUserSchema),
+  adminController.restoreUser
 );
 
 // Article Moderation (REVIEWER or ADMIN)

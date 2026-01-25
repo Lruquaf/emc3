@@ -1,14 +1,13 @@
 import { Router } from 'express';
 
 import * as articleController from '../controllers/article.controller.js';
-import { requireAuth } from '../middlewares/requireAuth.js';
+import { optionalAuth, requireAuth } from '../middlewares/requireAuth.js';
 import { requireVerifiedEmail } from '../middlewares/requireVerifiedEmail.js';
 import { rejectBannedForWrites } from '../middlewares/rejectBannedForWrites.js';
 import { validate, validateParams } from '../middlewares/validate.js';
 import { rateLimit } from '../middlewares/rateLimit.js';
 import {
   createArticleSchema,
-  articleSlugParamSchema,
   articleIdParamSchema,
 } from '@emc3/shared';
 
@@ -18,11 +17,12 @@ export const articlesRouter = Router();
 // Public Routes
 // ═══════════════════════════════════════════════════════════
 
-// Read article by slug (public)
+// Read article by ID (public; optionalAuth for viewerInteraction when logged in)
 articlesRouter.get(
-  '/:slug',
-  validateParams(articleSlugParamSchema),
-  articleController.getArticleBySlug
+  '/:id',
+  optionalAuth,
+  validateParams(articleIdParamSchema),
+  articleController.getArticleById
 );
 
 // ═══════════════════════════════════════════════════════════

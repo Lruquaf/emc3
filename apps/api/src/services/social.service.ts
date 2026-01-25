@@ -307,13 +307,13 @@ export function mapToFeedItem(article: any, viewerId?: string): FeedItemDTO {
 
   return {
     id: article.id,
-    slug: article.slug,
     author: {
       id: article.author.id,
       username: article.author.username,
       displayName: article.author.profile?.displayName ?? null,
       avatarUrl: article.author.profile?.avatarUrl ?? null,
       isBanned: !!article.author.ban,
+      isDeleted: article.author.isDeleted ?? false,
     },
     title: revision?.title ?? '',
     summary: revision?.summary ?? '',

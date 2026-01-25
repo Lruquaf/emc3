@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import * as opinionController from '../controllers/opinion.controller.js';
-import { requireAuth } from '../middlewares/requireAuth.js';
+import { optionalAuth, requireAuth } from '../middlewares/requireAuth.js';
 import { requireVerifiedEmail } from '../middlewares/requireVerifiedEmail.js';
 import { rejectBannedForWrites } from '../middlewares/rejectBannedForWrites.js';
 import { validate, validateParams, validateQuery } from '../middlewares/validate.js';
@@ -21,9 +21,10 @@ export const opinionRouter = Router();
 // Public Routes
 // ═══════════════════════════════════════════════════════════
 
-// Get opinions for article
+// Get opinions for article (optionalAuth for viewerHasLiked when logged in)
 opinionRouter.get(
   '/articles/:id/opinions',
+  optionalAuth,
   validateParams(articleIdParamSchema),
   validateQuery(OpinionListQuerySchema),
   opinionController.getOpinions

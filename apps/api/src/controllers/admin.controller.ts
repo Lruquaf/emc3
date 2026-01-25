@@ -148,6 +148,27 @@ export async function updateUserRole(
   }
 }
 
+/**
+ * POST /admin/users/:id/restore
+ * Restore deleted user account
+ */
+export async function restoreUser(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id: targetUserId } = req.params;
+    const actorId = req.user!.id;
+    const { newEmail, newUsername } = req.body as { newEmail?: string; newUsername?: string };
+
+    const result = await moderationService.restoreUser(targetUserId, actorId, newEmail, newUsername);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // Article Moderation
 // ═══════════════════════════════════════════════════════════

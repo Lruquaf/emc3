@@ -495,6 +495,7 @@ function mapToOpinionDTO(
       username: opinion.author.username,
       displayName: opinion.author.profile?.displayName ?? null,
       avatarUrl: opinion.author.profile?.avatarUrl ?? null,
+      isDeleted: opinion.author.isDeleted ?? false,
     },
     bodyMarkdown: opinion.bodyMarkdown,
     likeCount: opinion.likeCount,
@@ -516,6 +517,7 @@ function mapToReplyDTO(
     replier: {
       id: string;
       username: string;
+      isDeleted: boolean;
       profile: { displayName: string | null; avatarUrl: string | null } | null;
     };
   },
@@ -532,6 +534,7 @@ function mapToReplyDTO(
       username: reply.replier.username,
       displayName: reply.replier.profile?.displayName ?? null,
       avatarUrl: reply.replier.profile?.avatarUrl ?? null,
+      isDeleted: reply.replier.isDeleted ?? false,
     },
     bodyMarkdown: reply.bodyMarkdown,
     createdAt: reply.createdAt.toISOString(),

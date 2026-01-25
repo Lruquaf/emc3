@@ -87,7 +87,6 @@ export async function getReviewQueue(options: {
     items: items.map((rev): ReviewQueueItemDTO => ({
       id: rev.id,
       articleId: rev.article.id,
-      articleSlug: rev.article.slug,
       title: rev.title,
       summary: rev.summary,
       author: {
@@ -174,7 +173,6 @@ export async function getRevisionDetail(revisionId: string): Promise<RevisionRev
   return {
     id: revision.id,
     articleId: revision.article.id,
-    articleSlug: revision.article.slug,
     status: revision.status as RevisionStatus,
     
     title: revision.title,
@@ -228,7 +226,7 @@ export async function giveFeedback(
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
-      article: { select: { id: true, slug: true } },
+      article: { select: { id: true } },
     },
   });
 
@@ -270,7 +268,6 @@ export async function giveFeedback(
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
-          articleSlug: revision.article.slug,
           feedbackLength: feedbackText.length,
         },
       },
@@ -298,7 +295,7 @@ export async function approveRevision(
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
     include: {
-      article: { select: { id: true, slug: true } },
+      article: { select: { id: true } },
     },
   });
 
@@ -340,7 +337,6 @@ export async function approveRevision(
         targetId: revisionId,
         meta: {
           articleId: revision.article.id,
-          articleSlug: revision.article.slug,
         },
       },
     }),

@@ -9,19 +9,19 @@ import type { CreateArticleInput } from '@emc3/shared';
 // ═══════════════════════════════════════════════════════════
 
 /**
- * GET /api/v1/articles/:slug
- * Get article by slug (public)
+ * GET /api/v1/articles/:id
+ * Get article by ID (public)
  */
-export async function getArticleBySlug(
-  req: Request<{ slug: string }>,
+export async function getArticleById(
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const { slug } = req.params;
+    const { id: articleId } = req.params;
     const viewerId = req.user?.id;
 
-    const article = await articleService.getArticleBySlug(slug, viewerId);
+    const article = await articleService.getArticleById(articleId, viewerId);
 
     // Track view in background (don't await)
     const ip = req.ip || req.socket.remoteAddress || 'unknown';

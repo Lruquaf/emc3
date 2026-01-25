@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../lib/prisma.js';
 import { auditService } from './audit.service.js';
+import { generateUrlSafeToken, hashToken } from '../utils/crypto.js';
 import {
   AUDIT_ACTIONS,
   type AdminUserDTO,
@@ -104,7 +105,7 @@ export async function getDashboardStats(): Promise<AdminDashboardStats> {
 export async function listUsers(
   params: AdminUserListQuery
 ): Promise<AdminUserListResponse> {
-  const { query, role, isBanned, page = 1, limit = 20 } = params;
+  const { query, role, isBanned, isDeleted, page = 1, limit = 20 } = params;
   const skip = (page - 1) * limit;
 
   const where: Prisma.UserWhereInput = {};
@@ -128,17 +129,25 @@ export async function listUsers(
     if (isBanned) {
       where.ban = { isBanned: true };
     } else {
-      where.OR = [
-        ...(where.OR || []),
+      const banOr: Prisma.UserWhereInput[] = [
         { ban: null },
         { ban: { isBanned: false } },
       ];
-      // Reset OR if it was only ban filter
-      if (!query) {
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          { OR: banOr },
+        ];
         delete where.OR;
-        where.OR = [{ ban: null }, { ban: { isBanned: false } }];
+      } else {
+        where.OR = banOr;
       }
     }
+  }
+
+  // Filter by deleted status
+  if (isDeleted !== undefined) {
+    where.isDeleted = isDeleted;
   }
 
   const [users, total] = await Promise.all([
@@ -396,6 +405,102 @@ export async function updateUserRole(
   };
 }
 
+/**
+ * Restore a deleted user account (admin only)
+ * Note: This only restores the account flag, original data is lost due to anonymization
+ * Admin must provide a new email for the user to access their account
+ */
+export async function restoreUser(
+  targetUserId: string,
+  actorId: string,
+  newEmail?: string,
+  newUsername?: string
+): Promise<{ userId: string; resetToken: string; message: string }> {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { isDeleted: true, email: true, username: true },
+  });
+
+  if (!targetUser) {
+    throw new NotFoundError('User not found');
+  }
+
+  if (!targetUser.isDeleted) {
+    throw new ConflictError('User account is not deleted');
+  }
+
+  // Store original username for audit log (before it might be updated)
+  const originalUsername = targetUser.username;
+
+  // If new email/username provided, check if they're available
+  if (newEmail) {
+    const emailExists = await prisma.user.findUnique({
+      where: { email: newEmail.toLowerCase() },
+      select: { id: true },
+    });
+    if (emailExists) {
+      throw new ConflictError('Bu email adresi zaten kullanılıyor');
+    }
+  }
+
+  if (newUsername) {
+    const usernameExists = await prisma.user.findUnique({
+      where: { username: newUsername.toLowerCase() },
+      select: { id: true },
+    });
+    if (usernameExists) {
+      throw new ConflictError('Bu kullanıcı adı zaten kullanılıyor');
+    }
+  }
+
+  // Generate password reset token for user to set new password
+  const resetToken = generateUrlSafeToken(32);
+  const tokenHash = hashToken(resetToken);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  // Restore account and update email/username if provided
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        isDeleted: false,
+        deletedAt: null,
+        ...(newEmail && { email: newEmail.toLowerCase() }),
+        ...(newUsername && { username: newUsername.toLowerCase() }),
+      },
+    }),
+    // Create password reset token
+    prisma.passwordResetToken.create({
+      data: {
+        userId: targetUserId,
+        tokenHash,
+        expiresAt,
+      },
+    }),
+  ]);
+
+  // Audit log (use original username before restore, or new username if provided)
+  await auditService.log({
+    actorId,
+    action: 'USER_RESTORED',
+    targetType: 'user',
+    targetId: targetUserId,
+    meta: {
+      targetUsername: newUsername || originalUsername,
+      newEmail: newEmail || null,
+      newUsername: newUsername || null,
+    },
+  });
+
+  return {
+    userId: targetUserId,
+    resetToken,
+    message: newEmail
+      ? `Hesap başarıyla geri yüklendi. Yeni email: ${newEmail}. Şifre sıfırlama token'ı oluşturuldu.`
+      : 'Hesap başarıyla geri yüklendi. Şifre sıfırlama token\'ı oluşturuldu. Not: Email anonimleştirilmiş durumda, admin yeni email belirlemelidir.',
+  };
+}
+
 // ═══════════════════════════════════════════════════════════
 // ARTICLE MODERATION
 // ═══════════════════════════════════════════════════════════
@@ -504,7 +609,6 @@ export async function removeArticle(
     targetId: articleId,
     reason,
     meta: {
-      slug: article.slug,
       authorId: article.authorId,
       authorUsername: article.author.username,
     },
@@ -543,7 +647,6 @@ export async function restoreArticle(
     targetType: 'article',
     targetId: articleId,
     meta: {
-      slug: article.slug,
       restoredStatus: newStatus,
     },
   });
@@ -593,7 +696,6 @@ export async function removeOpinion(
     reason,
     meta: {
       articleId: opinion.articleId,
-      articleSlug: opinion.article.slug,
       authorId: opinion.authorId,
       authorUsername: opinion.author.username,
     },
@@ -615,7 +717,7 @@ export async function removeOpinionReply(
       opinion: {
         include: {
           article: {
-            select: { id: true, slug: true },
+            select: { id: true },
           },
         },
       },
@@ -645,7 +747,6 @@ export async function removeOpinionReply(
     meta: {
       opinionId: reply.opinionId,
       articleId: reply.opinion.articleId,
-      articleSlug: reply.opinion.article.slug,
       replierId: reply.replierId,
       replierUsername: reply.replier.username,
     },
@@ -661,6 +762,8 @@ function mapToAdminUserDTO(user: {
   email: string;
   username: string;
   emailVerified: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
   createdAt: Date;
   profile: { displayName: string | null; avatarUrl: string | null } | null;
   roles: { role: string }[];
@@ -676,6 +779,8 @@ function mapToAdminUserDTO(user: {
     isBanned: user.ban?.isBanned ?? false,
     banReason: user.ban?.reason ?? null,
     bannedAt: user.ban?.bannedAt?.toISOString() ?? null,
+    isDeleted: user.isDeleted,
+    deletedAt: user.deletedAt?.toISOString() ?? null,
     profile: user.profile
       ? {
           displayName: user.profile.displayName,
@@ -696,13 +801,13 @@ function mapToAdminArticleDTO(article: any): AdminArticleDTO {
 
   return {
     id: article.id,
-    slug: article.slug,
     status: article.status as 'PUBLISHED' | 'REMOVED',
     author: {
       id: article.author.id,
       username: article.author.username,
       displayName: article.author.profile?.displayName ?? null,
       isBanned: article.author.ban?.isBanned ?? false,
+      isDeleted: article.author.isDeleted ?? false,
     },
     title: publishedRevision?.title ?? 'Untitled',
     summary: publishedRevision?.summary ?? '',

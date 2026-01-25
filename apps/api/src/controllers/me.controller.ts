@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 
-import type { UpdateProfileInput, ChangePasswordInput, DeactivateAccountInput } from '@emc3/shared';
+import type { UpdateProfileInput, ChangePasswordInput, DeleteAccountInput } from '@emc3/shared';
 
 import { prisma } from '../lib/prisma.js';
 import * as revisionService from '../services/revision.service.js';
+import * as cloudinaryService from '../services/cloudinary.service.js';
 import { AppError } from '../utils/errors.js';
 
 // ═══════════════════════════════════════════════════════════
@@ -45,6 +46,35 @@ export async function getMyRevisions(
 // ═══════════════════════════════════════════════════════════
 
 /**
+ * GET /api/v1/me/avatar/upload-signature
+ * Get Cloudinary upload signature for client-side direct upload
+ */
+export async function getAvatarUploadSignature(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!cloudinaryService.isCloudinaryConfigured()) {
+      throw AppError.badRequest('Avatar upload is not configured');
+    }
+
+    const userId = req.user!.id;
+    const signature = cloudinaryService.generateUploadSignature(userId);
+
+    res.json({
+      signature: signature.signature,
+      timestamp: signature.timestamp,
+      folder: signature.folder,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      apiKey: process.env.CLOUDINARY_API_KEY,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * PATCH /api/v1/me/profile
  * Update current user's profile (displayName, about, avatarUrl)
  */
@@ -57,6 +87,12 @@ export async function updateProfile(
     const userId = req.user!.id;
     const body = req.body as UpdateProfileInput;
 
+    // Get current profile to check for old avatar
+    const currentProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { avatarUrl: true },
+    });
+
     const data: {
       displayName?: string | null;
       about?: string | null;
@@ -65,7 +101,23 @@ export async function updateProfile(
     } = {};
     if (body.displayName !== undefined) data.displayName = body.displayName;
     if (body.about !== undefined) data.about = body.about;
-    if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl;
+    if (body.avatarUrl !== undefined) {
+      data.avatarUrl = body.avatarUrl;
+      
+      // Delete old avatar from Cloudinary if it exists and is different
+      if (
+        currentProfile?.avatarUrl &&
+        currentProfile.avatarUrl !== body.avatarUrl &&
+        currentProfile.avatarUrl.includes('cloudinary.com')
+      ) {
+        const oldPublicId = cloudinaryService.extractPublicId(currentProfile.avatarUrl);
+        if (oldPublicId) {
+          cloudinaryService.deleteImage(oldPublicId).catch((err) => {
+            console.error('Failed to delete old avatar:', err);
+          });
+        }
+      }
+    }
     if (body.socialLinks !== undefined) {
       // Filter out empty strings and keep only valid URLs
       const cleanedLinks: Record<string, string> = {};
@@ -167,41 +219,81 @@ export async function changePassword(
 }
 
 /**
- * POST /api/v1/me/deactivate
- * Deactivate (freeze) current user's account
+ * POST /api/v1/me/delete-account
+ * Delete (soft delete + anonymize) current user's account
  */
-export async function deactivateAccount(
+export async function deleteAccount(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
     const userId = req.user!.id;
-    const { password } = req.body as DeactivateAccountInput;
+    const { password } = req.body as DeleteAccountInput;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { passwordHash: true },
+      include: { profile: true },
     });
 
-    if (!user || !user.passwordHash) {
-      throw AppError.badRequest('Bu hesap için şifre doğrulama mevcut değil');
+    if (!user) {
+      throw AppError.notFound('Kullanıcı bulunamadı');
     }
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) {
-      throw AppError.unauthorized('Şifre hatalı');
+    // Check if already deleted
+    if (user.isDeleted) {
+      throw AppError.badRequest('Hesap zaten silinmiş');
     }
 
-    // Soft delete: Set a flag or remove password to prevent login
-    // For now, we'll just remove the password hash (user can't login)
-    // In a real system, you might want a separate `isDeactivated` field
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash: null },
-    });
+    // Verify password if user has one
+    // OAuth users might not have a password
+    if (user.passwordHash) {
+      if (!password) {
+        throw AppError.badRequest('Şifre gerekli');
+      }
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        throw AppError.unauthorized('Şifre hatalı');
+      }
+    }
+    // OAuth users without password can delete without password verification
 
-    res.json({ message: 'Hesabınız donduruldu. Giriş yapamazsınız.' });
+    // Soft delete + anonymize
+    const deletedAt = new Date();
+    const deletedUserId = `deleted_${userId.slice(0, 8)}`;
+    
+    await prisma.$transaction([
+      // Anonymize user
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted_${userId}@deleted.local`,
+          username: deletedUserId,
+          passwordHash: null,
+          isDeleted: true,
+          deletedAt,
+        },
+      }),
+      // Anonymize profile
+      prisma.userProfile.upsert({
+        where: { userId },
+        create: {
+          userId,
+          displayName: 'Silinmiş Kullanıcı',
+          about: null,
+          avatarUrl: null,
+          socialLinks: {},
+        },
+        update: {
+          displayName: 'Silinmiş Kullanıcı',
+          about: null,
+          avatarUrl: null,
+          socialLinks: {},
+        },
+      }),
+    ]);
+
+    res.json({ message: 'Hesabınız silindi. Tüm kişisel bilgileriniz anonimleştirildi.' });
   } catch (error) {
     next(error);
   }
