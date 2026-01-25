@@ -62,6 +62,7 @@ export interface UserProfileDTO {
   };
   isFollowing: boolean; // viewer perspective
   isBanned: boolean;
+  isDeleted: boolean;
   createdAt: string;
 }
 
@@ -76,6 +77,7 @@ export interface UserSummaryDTO {
   about: string | null;
   isFollowing: boolean;
   isBanned: boolean;
+  isDeleted: boolean;
 }
 
 /**
@@ -87,6 +89,7 @@ export interface AuthorSummaryDTO {
   displayName: string | null;
   avatarUrl: string | null;
   isBanned: boolean;
+  isDeleted: boolean;
 }
 
 /**
@@ -103,7 +106,6 @@ export interface CategorySummaryDTO {
  */
 export interface FeedItemDTO {
   id: string;
-  slug: string;
   author: AuthorSummaryDTO;
   title: string;
   summary: string;

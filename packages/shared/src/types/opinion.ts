@@ -10,6 +10,7 @@ export interface OpinionAuthorDTO {
   username: string;
   displayName: string | null;
   avatarUrl: string | null;
+  isDeleted: boolean;
 }
 
 /**

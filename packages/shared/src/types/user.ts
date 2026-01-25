@@ -12,6 +12,7 @@ export interface UserPublicDTO {
   displayName: string | null;
   avatarUrl: string | null;
   isBanned: boolean;
+  isDeleted: boolean;
 }
 
 /**

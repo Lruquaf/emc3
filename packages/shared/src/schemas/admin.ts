@@ -41,10 +41,21 @@ export const updateRoleSchema = z.object({
 
 export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;
 
+export const restoreUserSchema = z.object({
+  newEmail: z.string().email('Geçerli bir email adresi girin').optional(),
+  newUsername: z.string().min(3, 'Kullanıcı adı en az 3 karakter olmalıdır').max(30, 'Kullanıcı adı en fazla 30 karakter olabilir').optional(),
+});
+
+export type RestoreUserInput = z.infer<typeof restoreUserSchema>;
+
 export const adminUserListQuerySchema = z.object({
   query: z.string().max(100).optional(),
   role: z.enum(['ADMIN', 'REVIEWER']).optional(),
   isBanned: z
+    .string()
+    .transform((val) => val === 'true')
+    .optional(),
+  isDeleted: z
     .string()
     .transform((val) => val === 'true')
     .optional(),

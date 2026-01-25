@@ -126,14 +126,18 @@ export const changePasswordSchema = z.object({
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
 /**
- * Deactivate account schema
+ * Delete account schema
  */
-export const deactivateAccountSchema = z.object({
-  password: z.string().min(1, 'Şifre gerekli'),
+export const deleteAccountSchema = z.object({
+  password: z.string().optional(), // Optional for OAuth users
   confirm: z.literal(true, {
-    errorMap: () => ({ message: 'Hesabı dondurmayı onaylamalısınız' }),
+    errorMap: () => ({ message: 'Hesabı silmeyi onaylamalısınız' }),
   }),
 });
 
-export type DeactivateAccountInput = z.infer<typeof deactivateAccountSchema>;
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
+
+// Legacy alias for backward compatibility
+export const deactivateAccountSchema = deleteAccountSchema;
+export type DeactivateAccountInput = DeleteAccountInput;
 

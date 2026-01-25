@@ -19,7 +19,6 @@ export interface ReviewFeedbackDTO {
 export interface RevisionDTO {
   id: string;
   articleId: string;
-  articleSlug: string;
   status: RevisionStatus;
   title: string;
   summary: string;
@@ -37,7 +36,6 @@ export interface RevisionDTO {
 export interface RevisionListItemDTO {
   id: string;
   articleId: string;
-  articleSlug: string;
   title: string;
   status: RevisionStatus;
   hasUnreadFeedback: boolean;
@@ -62,7 +60,6 @@ export interface RevisionHistoryItemDTO {
  */
 export interface CreateArticleResponse {
   articleId: string;
-  slug: string;
   revisionId: string;
   status: RevisionStatus;
 }

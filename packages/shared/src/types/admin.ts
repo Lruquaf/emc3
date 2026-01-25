@@ -52,6 +52,8 @@ export interface AdminUserDTO {
   isBanned: boolean;
   banReason: string | null;
   bannedAt: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
   profile: {
     displayName: string | null;
     avatarUrl: string | null;
@@ -83,6 +85,7 @@ export interface AdminUserListParams {
   query?: string;
   role?: RoleName;
   isBanned?: boolean;
+  isDeleted?: boolean;
   page?: number;
   limit?: number;
 }
@@ -103,13 +106,13 @@ export interface RemoveArticleRequest {
  */
 export interface AdminArticleDTO {
   id: string;
-  slug: string;
   status: 'PUBLISHED' | 'REMOVED';
   author: {
     id: string;
     username: string;
     displayName: string | null;
     isBanned: boolean;
+    isDeleted: boolean;
   };
   title: string;
   summary: string;
@@ -185,7 +188,6 @@ export interface AdminDashboardStats {
 export interface ReviewQueueItemDTO {
   id: string;                    // revision id
   articleId: string;
-  articleSlug: string;
   title: string;
   summary: string;
   author: AuthorDTO;
@@ -230,7 +232,6 @@ export interface ReviewFeedbackHistoryDTO {
 export interface RevisionReviewDetailDTO {
   id: string;
   articleId: string;
-  articleSlug: string;
   status: RevisionStatus;
   
   // Content
@@ -317,7 +318,6 @@ export interface ReviewActionResponse {
  */
 export interface PublishResponse {
   articleId: string;
-  articleSlug: string;
   revisionId: string;
   isFirstPublish: boolean;
   firstPublishedAt: string;

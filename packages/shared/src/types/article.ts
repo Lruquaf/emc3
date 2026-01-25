@@ -25,6 +25,7 @@ export interface AuthorDTO {
   displayName: string | null;
   avatarUrl: string | null;
   isBanned: boolean;
+  isDeleted: boolean;
 }
 
 /**
@@ -58,7 +59,6 @@ export interface ViewerInteractionDTO {
  */
 export interface ArticlePublicDTO {
   id: string;
-  slug: string;
   author: AuthorDTO;
   title: string;
   summary: string;
