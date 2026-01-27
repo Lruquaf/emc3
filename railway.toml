@@ -8,8 +8,9 @@ builder = "NIXPACKS"
 buildCommand = "pnpm install && pnpm build:api:deploy"
 
 [deploy]
-# Start komutu - API'yi başlatmak için
-startCommand = "cd apps/api && node dist/index.js"
+# Start komutu - Migration'ları çalıştırıp API'yi başlatmak için
+# Prisma migrate deploy idempotent'tir (aynı migration'ı tekrar çalıştırmak sorun yaratmaz)
+startCommand = "cd apps/api && pnpm start:deploy"
 
 # Health check endpoint
 healthcheckPath = "/api/v1/health"
