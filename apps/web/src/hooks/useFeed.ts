@@ -35,7 +35,7 @@ export function useGlobalFeed(params: UseGlobalFeedOptions = {}) {
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
-      lastPage.meta.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
+      lastPage.meta?.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
     staleTime: 1000 * 60, // 1 minute
     enabled,
   });
@@ -61,7 +61,7 @@ export function useFollowingFeed(params: FollowingFeedParams = {}) {
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
-      lastPage.meta.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
+      lastPage.meta?.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
     staleTime: 1000 * 60, // 1 minute
   });
 }
@@ -89,7 +89,7 @@ export function useUserSearch(
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
-      lastPage.meta.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
+      lastPage.meta?.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
     enabled: enabled && query.length > 0,
   });
 }

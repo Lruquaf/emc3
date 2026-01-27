@@ -1,4 +1,12 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+// Ensure API URL ends with /api/v1 and doesn't have trailing slash issues
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+const API_URL = rawApiUrl.endsWith('/api/v1') 
+  ? rawApiUrl 
+  : rawApiUrl.endsWith('/api/v1/')
+  ? rawApiUrl.slice(0, -1)
+  : rawApiUrl.endsWith('/')
+  ? `${rawApiUrl}api/v1`
+  : `${rawApiUrl}/api/v1`;
 
 // ═══════════════════════════════════════════════════════════
 // Types
