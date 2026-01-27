@@ -33,7 +33,7 @@ export function CategoryFilter({
   }, []);
 
   // Find selected category
-  const selectedCategory = data?.flatList.find((c) => c.slug === selectedSlug);
+  const selectedCategory = data?.flatList?.find((c) => c.slug === selectedSlug);
 
   // Render tree item recursively
   const renderTreeItem = (node: CategoryTreeNodeDTO, level = 0) => (
@@ -53,7 +53,7 @@ export function CategoryFilter({
         {selectedSlug === node.slug && <Check size={14} className="flex-shrink-0" />}
         <span className="truncate">{node.name}</span>
       </button>
-      {node.children.map((child) => renderTreeItem(child, level + 1))}
+      {node.children?.map((child) => renderTreeItem(child, level + 1))}
     </div>
   );
 
@@ -113,7 +113,7 @@ export function CategoryFilter({
           <div className="border-t border-border" />
 
           {/* Tree */}
-          {data.tree.map((node) => renderTreeItem(node))}
+          {data.tree?.map((node) => renderTreeItem(node))}
         </div>
       )}
     </div>

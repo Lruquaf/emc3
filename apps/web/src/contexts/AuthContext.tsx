@@ -139,7 +139,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const hasRole = useCallback(
     (role: string) => {
-      return state.user?.roles.includes(role) ?? false;
+      return state.user?.roles?.includes(role) ?? false;
     },
     [state.user]
   );
