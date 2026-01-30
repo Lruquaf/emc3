@@ -47,6 +47,18 @@
     "lint-staged": "^15.0.0"
   },
   "lint-staged": {
+    "apps/web/**/*.{js,jsx,ts,tsx}": [
+      "bash scripts/lint-staged-web.sh",
+      "prettier --write"
+    ],
+    "apps/api/**/*.{js,ts}": [
+      "bash scripts/lint-staged-api.sh",
+      "prettier --write"
+    ],
+    "packages/**/*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
     "*.{js,jsx,ts,tsx}": [
       "eslint --fix",
       "prettier --write"
