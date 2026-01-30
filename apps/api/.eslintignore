@@ -1,0 +1,2 @@
+# prisma/ tsconfig'te değil; ESLint parserOptions.project hatası vermesin
+prisma/

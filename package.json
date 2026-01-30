@@ -51,15 +51,14 @@
       "bash scripts/lint-staged-web.sh",
       "prettier --write"
     ],
-    "apps/api/**/*.{js,ts}": [
+    "apps/api/src/**/*.{js,ts}": [
       "bash scripts/lint-staged-api.sh",
       "prettier --write"
     ],
-    "packages/**/*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
+    "apps/api/prisma/**/*.ts": [
       "prettier --write"
     ],
-    "*.{js,jsx,ts,tsx}": [
+    "packages/**/*.{js,jsx,ts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ],
