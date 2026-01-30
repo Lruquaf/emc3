@@ -21,13 +21,11 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 # ═══════════════════════════════════════════════════════════
-# Otomatik Migration + Seed (Staging) Hook
+# Seed: Railway [deploy.hooks] postdeploy DESTEKLENMİYOR.
+# Seed, startCommand içinde çalışıyor (apps/api/scripts/start-deploy.sh).
+# RUN_SEED_ON_DEPLOY=true ise container her başladığında seed çalışır.
+# İlk deploy sonrası RUN_SEED_ON_DEPLOY=false yapın; aksi halde restart'ta seed tekrar çalışır.
 # ═══════════════════════════════════════════════════════════
-# Railway deployment sonrası: migration zorunlu, seed isteğe bağlı (RUN_SEED_ON_DEPLOY=true)
-# Staging ortamında seed: kategoriler, admin/moderatör kullanıcılar, örnek makaleler
-[deploy.hooks]
-# Post-deploy: migrate her zaman, seed sadece RUN_SEED_ON_DEPLOY=true ise
-postdeploy = "cd apps/api && pnpm db:generate && pnpm db:migrate && ( [ \"$RUN_SEED_ON_DEPLOY\" = \"true\" ] && pnpm db:seed || true )"
 
 # ═══════════════════════════════════════════════════════════
 # Environment Variables (Opsiyonel - Railway dashboard'dan da eklenebilir)
