@@ -1,22 +1,46 @@
-import nodemailer from "nodemailer";
-
 import { env } from "../config/env.js";
 
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private apiKey: string | undefined;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: false, // Brevo uses STARTTLS on port 587
-      auth: env.SMTP_USER
-        ? {
-            user: env.SMTP_USER,
-            pass: env.SMTP_PASS,
-          }
-        : undefined,
+    this.apiKey = env.BREVO_API_KEY;
+  }
+
+  private async sendViaBrevo(payload: {
+    subject: string;
+    htmlContent: string;
+    textContent: string;
+    to: string;
+  }): Promise<void> {
+    if (!this.apiKey) {
+      console.warn("[EmailService] BREVO_API_KEY not set, skipping email");
+      return;
+    }
+
+    const res = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": this.apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: "e=mc³", email: env.EMAIL_FROM },
+        to: [{ email: payload.to }],
+        subject: payload.subject,
+        htmlContent: payload.htmlContent,
+        textContent: payload.textContent,
+      }),
     });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { message?: string };
+      throw new Error(
+        `Brevo API error ${res.status}: ${err.message ?? res.statusText}`,
+      );
+    }
   }
 
   // ─────────────────────────────────────────────────────────
@@ -26,12 +50,11 @@ export class EmailService {
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     const verificationUrl = `${env.FRONTEND_URL}/verify-email?token=${token}`;
 
-    await this.transporter.sendMail({
-      from: `"e=mc³" <${env.EMAIL_FROM}>`,
-      to,
+    await this.sendViaBrevo({
       subject: "Email Adresinizi Doğrulayın - e=mc³",
-      html: this.getVerificationEmailHtml(verificationUrl),
-      text: this.getVerificationEmailText(verificationUrl),
+      htmlContent: this.getVerificationEmailHtml(verificationUrl),
+      textContent: this.getVerificationEmailText(verificationUrl),
+      to,
     });
   }
 
@@ -105,12 +128,11 @@ Bu link 24 saat geçerlidir. Eğer bu işlemi siz yapmadıysanız, bu emaili gö
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
 
-    await this.transporter.sendMail({
-      from: `"e=mc³" <${env.EMAIL_FROM}>`,
-      to,
+    await this.sendViaBrevo({
       subject: "Şifre Sıfırlama - e=mc³",
-      html: this.getPasswordResetEmailHtml(resetUrl),
-      text: this.getPasswordResetEmailText(resetUrl),
+      htmlContent: this.getPasswordResetEmailHtml(resetUrl),
+      textContent: this.getPasswordResetEmailText(resetUrl),
+      to,
     });
   }
 

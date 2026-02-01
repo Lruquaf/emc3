@@ -37,6 +37,7 @@
     "db:seed": "pnpm --filter @emc3/api db:seed",
     "db:reset": "pnpm --filter @emc3/api db:reset",
     "db:studio": "pnpm --filter @emc3/api db:studio",
+    "db:clean-unverified": "pnpm --filter @emc3/api run db:clean-unverified",
     "docker:up": "docker compose -f infra/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker-compose.yml down",
     "docker:logs": "docker compose -f infra/docker-compose.yml logs -f",
