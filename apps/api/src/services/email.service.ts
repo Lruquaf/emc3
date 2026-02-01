@@ -20,8 +20,12 @@ export class EmailService {
       return;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
     const res = await fetch(BREVO_API_URL, {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "api-key": this.apiKey,
         "Content-Type": "application/json",
@@ -34,6 +38,8 @@ export class EmailService {
         textContent: payload.textContent,
       }),
     });
+
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as { message?: string };

@@ -1,12 +1,17 @@
-import { User, UserRole, UserProfile, UserBan } from '@prisma/client';
+import { User, UserRole, UserProfile, UserBan } from "@prisma/client";
 
-import { prisma } from '../lib/prisma.js';
-import { hashPassword, comparePassword } from '../utils/password.js';
-import { hashToken, generateUrlSafeToken } from '../utils/crypto.js';
-import { generateTokenPair, verifyToken, TokenPair, TokenPayload } from '../lib/jwt.js';
-import { EmailService } from './email.service.js';
-import { AppError } from '../utils/errors.js';
-import { env } from '../config/env.js';
+import { prisma } from "../lib/prisma.js";
+import { hashPassword, comparePassword } from "../utils/password.js";
+import { hashToken, generateUrlSafeToken } from "../utils/crypto.js";
+import {
+  generateTokenPair,
+  verifyToken,
+  TokenPair,
+  TokenPayload,
+} from "../lib/jwt.js";
+import { EmailService } from "./email.service.js";
+import { AppError } from "../utils/errors.js";
+import { env } from "../config/env.js";
 
 // ═══════════════════════════════════════════════════════════
 // Types
@@ -55,7 +60,7 @@ export class AuthService {
       where: { email: email.toLowerCase() },
     });
     if (existingEmail) {
-      throw AppError.conflict('Email already registered', { field: 'email' });
+      throw AppError.conflict("Email already registered", { field: "email" });
     }
 
     // Check for existing username
@@ -63,7 +68,7 @@ export class AuthService {
       where: { username: username.toLowerCase() },
     });
     if (existingUsername) {
-      throw AppError.conflict('Username already taken', { field: 'username' });
+      throw AppError.conflict("Username already taken", { field: "username" });
     }
 
     // Hash password
@@ -96,7 +101,7 @@ export class AuthService {
 
   async createAndSendVerificationEmail(
     userId: string,
-    email: string
+    email: string,
   ): Promise<void> {
     const token = generateUrlSafeToken(32);
     const tokenHash = hashToken(token);
@@ -110,7 +115,15 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendVerificationEmail(email, token);
+    try {
+      await this.emailService.sendVerificationEmail(email, token);
+    } catch (err) {
+      console.error(
+        "[AuthService] Verification email failed (registration still succeeded):",
+        err,
+      );
+      // Kayıt tamamlandı, token DB'de; kullanıcı "E-postayı tekrar gönder" ile deneyebilir
+    }
   }
 
   async verifyEmail(token: string): Promise<void> {
@@ -121,15 +134,15 @@ export class AuthService {
     });
 
     if (!verificationToken) {
-      throw AppError.badRequest('Invalid verification token');
+      throw AppError.badRequest("Invalid verification token");
     }
 
     if (verificationToken.usedAt) {
-      throw AppError.badRequest('Token has already been used');
+      throw AppError.badRequest("Token has already been used");
     }
 
     if (new Date() > verificationToken.expiresAt) {
-      throw AppError.badRequest('Verification token has expired');
+      throw AppError.badRequest("Verification token has expired");
     }
 
     // Transaction: mark token as used and verify user
@@ -174,7 +187,7 @@ export class AuthService {
 
   async login(
     email: string,
-    password: string
+    password: string,
   ): Promise<{ user: UserWithRelations; tokens: TokenPair }> {
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -186,17 +199,17 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw AppError.unauthorized('Invalid email or password');
+      throw AppError.unauthorized("Invalid email or password");
     }
 
     // Check if account is deleted
     if (user.isDeleted) {
-      throw AppError.unauthorized('Bu hesap silinmiş');
+      throw AppError.unauthorized("Bu hesap silinmiş");
     }
 
     const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw AppError.unauthorized('Invalid email or password');
+      throw AppError.unauthorized("Invalid email or password");
     }
 
     const tokens = this.generateUserTokens(user);
@@ -229,7 +242,12 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendPasswordResetEmail(email, token);
+    try {
+      await this.emailService.sendPasswordResetEmail(email, token);
+    } catch (err) {
+      console.error("[AuthService] Password reset email failed:", err);
+      // Sessiz devam et; kullanıcı varlığını sızdırma
+    }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
@@ -245,20 +263,20 @@ export class AuthService {
     });
 
     if (!resetToken) {
-      throw AppError.badRequest('Invalid reset token');
+      throw AppError.badRequest("Invalid reset token");
     }
 
     if (resetToken.usedAt) {
-      throw AppError.badRequest('Token has already been used');
+      throw AppError.badRequest("Token has already been used");
     }
 
     if (new Date() > resetToken.expiresAt) {
-      throw AppError.badRequest('Reset token has expired');
+      throw AppError.badRequest("Reset token has expired");
     }
 
     // Check if account is deleted
     if (resetToken.user.isDeleted) {
-      throw AppError.unauthorized('Bu hesap silinmiş');
+      throw AppError.unauthorized("Bu hesap silinmiş");
     }
 
     const passwordHash = await hashPassword(newPassword);
@@ -284,19 +302,19 @@ export class AuthService {
     try {
       const payload = verifyToken(refreshToken);
 
-      if (payload.type !== 'refresh') {
-        throw new Error('Invalid token type');
+      if (payload.type !== "refresh") {
+        throw new Error("Invalid token type");
       }
 
       const user = await this.getUserWithRelationsById(payload.sub);
 
       if (!user) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       return this.generateUserTokens(user);
     } catch {
-      throw AppError.unauthorized('Invalid refresh token');
+      throw AppError.unauthorized("Invalid refresh token");
     }
   }
 
@@ -305,37 +323,41 @@ export class AuthService {
   // ─────────────────────────────────────────────────────────
 
   async googleAuth(
-    code: string
-  ): Promise<{ user: UserWithRelations; tokens: TokenPair; isNewUser: boolean }> {
+    code: string,
+  ): Promise<{
+    user: UserWithRelations;
+    tokens: TokenPair;
+    isNewUser: boolean;
+  }> {
     // Exchange code for tokens
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: env.GOOGLE_CLIENT_ID!,
-        client_secret: env.GOOGLE_CLIENT_SECRET!,
-        redirect_uri: env.GOOGLE_CALLBACK_URL!,
-        grant_type: 'authorization_code',
+        client_id: env.GOOGLE_CLIENT_ID ?? "",
+        client_secret: env.GOOGLE_CLIENT_SECRET ?? "",
+        redirect_uri: env.GOOGLE_CALLBACK_URL ?? "",
+        grant_type: "authorization_code",
       }),
     });
 
     if (!tokenResponse.ok) {
-      throw AppError.badRequest('Failed to exchange authorization code');
+      throw AppError.badRequest("Failed to exchange authorization code");
     }
 
     const tokenData = (await tokenResponse.json()) as { access_token: string };
 
     // Get user info from Google
     const userInfoResponse = await fetch(
-      'https://www.googleapis.com/oauth2/v3/userinfo',
+      "https://www.googleapis.com/oauth2/v3/userinfo",
       {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      }
+      },
     );
 
     if (!userInfoResponse.ok) {
-      throw AppError.badRequest('Failed to get user info from Google');
+      throw AppError.badRequest("Failed to get user info from Google");
     }
 
     const googleProfile = (await userInfoResponse.json()) as GoogleProfile;
@@ -344,7 +366,7 @@ export class AuthService {
     const oauthAccount = await prisma.oAuthAccount.findUnique({
       where: {
         provider_providerSubject: {
-          provider: 'google',
+          provider: "google",
           providerSubject: googleProfile.sub,
         },
       },
@@ -366,7 +388,7 @@ export class AuthService {
       user = oauthAccount.user;
       // Check if account is deleted
       if (user.isDeleted) {
-        throw AppError.unauthorized('Bu hesap silinmiş');
+        throw AppError.unauthorized("Bu hesap silinmiş");
       }
     } else {
       // Check if email already exists
@@ -382,13 +404,13 @@ export class AuthService {
       if (existingUser) {
         // Check if account is deleted
         if (existingUser.isDeleted) {
-          throw AppError.unauthorized('Bu hesap silinmiş');
+          throw AppError.unauthorized("Bu hesap silinmiş");
         }
         // Link OAuth account to existing user
         await prisma.oAuthAccount.create({
           data: {
             userId: existingUser.id,
-            provider: 'google',
+            provider: "google",
             providerSubject: googleProfile.sub,
             email: googleProfile.email,
           },
@@ -421,7 +443,7 @@ export class AuthService {
             },
             oauthAccounts: {
               create: {
-                provider: 'google',
+                provider: "google",
                 providerSubject: googleProfile.sub,
                 email: googleProfile.email,
               },
@@ -453,7 +475,7 @@ export class AuthService {
   }
 
   private async getUserWithRelationsById(
-    id: string
+    id: string,
   ): Promise<UserWithRelations | null> {
     return prisma.user.findUnique({
       where: { id },
@@ -466,7 +488,7 @@ export class AuthService {
   }
 
   private generateUserTokens(user: UserWithRelations): TokenPair {
-    const payload: Omit<TokenPayload, 'type'> = {
+    const payload: Omit<TokenPayload, "type"> = {
       sub: user.id,
       email: user.email,
       username: user.username,
@@ -479,16 +501,17 @@ export class AuthService {
   }
 
   private async generateUniqueUsername(email: string): Promise<string> {
-    const baseUsername = email
-      .split('@')[0]!
+    const firstPart = email.split("@")[0];
+    const baseUsername = (firstPart ?? email)
       .toLowerCase()
-      .replace(/[^a-z0-9_]/g, '')
+      .replace(/[^a-z0-9_]/g, "")
       .slice(0, 20);
 
     let username = baseUsername;
     let suffix = 0;
+    const maxTries = 100_000;
 
-    while (true) {
+    while (suffix < maxTries) {
       const existing = await prisma.user.findUnique({
         where: { username },
       });
@@ -500,6 +523,7 @@ export class AuthService {
       suffix++;
       username = `${baseUsername}${suffix}`;
     }
+
+    throw new Error("Could not generate unique username");
   }
 }
-
