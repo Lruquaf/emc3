@@ -2,6 +2,12 @@ import { env } from "../config/env.js";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
+/** E-posta linkleri için tek bir base URL (FRONTEND_URL virgülle ayrılmış olabilir) */
+function getBaseFrontendUrl(): string {
+  const first = env.FRONTEND_URL.split(",")[0]?.trim() ?? env.FRONTEND_URL;
+  return first.replace(/\/$/, "");
+}
+
 export class EmailService {
   private apiKey: string | undefined;
 
@@ -54,7 +60,8 @@ export class EmailService {
   // ─────────────────────────────────────────────────────────
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
-    const verificationUrl = `${env.FRONTEND_URL}/verify-email?token=${token}`;
+    const baseUrl = getBaseFrontendUrl();
+    const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
 
     await this.sendViaBrevo({
       subject: "Email Adresinizi Doğrulayın - e=mc³",
@@ -132,7 +139,8 @@ Bu link 24 saat geçerlidir. Eğer bu işlemi siz yapmadıysanız, bu emaili gö
   // ─────────────────────────────────────────────────────────
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
-    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+    const baseUrl = getBaseFrontendUrl();
+    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
     await this.sendViaBrevo({
       subject: "Şifre Sıfırlama - e=mc³",
