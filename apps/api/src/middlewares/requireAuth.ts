@@ -1,12 +1,12 @@
-import { RequestHandler } from 'express';
+import { RequestHandler } from "express";
 
-import { verifyToken } from '../lib/jwt.js';
-import { prisma } from '../lib/prisma.js';
-import { ERROR_CODES } from '@emc3/shared';
+import { verifyToken } from "../lib/jwt.js";
+import { prisma } from "../lib/prisma.js";
+import { ERROR_CODES } from "@emc3/shared";
 
 /**
  * Require authenticated user
- * Extracts and verifies JWT from cookies
+ * Token yalnızca httpOnly cookie (access_token) ile; XSS'e karşı standart.
  */
 export const requireAuth: RequestHandler = async (req, res, next) => {
   try {
@@ -15,7 +15,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     if (!accessToken) {
       res.status(401).json({
         code: ERROR_CODES.UNAUTHENTICATED,
-        message: 'Authentication required',
+        message: "Authentication required",
       });
       return;
     }
@@ -23,10 +23,10 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     // Verify and decode token
     const payload = verifyToken(accessToken);
 
-    if (payload.type !== 'access') {
+    if (payload.type !== "access") {
       res.status(401).json({
         code: ERROR_CODES.UNAUTHENTICATED,
-        message: 'Invalid token type',
+        message: "Invalid token type",
       });
       return;
     }
@@ -43,7 +43,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     if (!user) {
       res.status(401).json({
         code: ERROR_CODES.UNAUTHENTICATED,
-        message: 'User not found',
+        message: "User not found",
       });
       return;
     }
@@ -62,7 +62,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
   } catch {
     res.status(401).json({
       code: ERROR_CODES.UNAUTHENTICATED,
-      message: 'Invalid or expired token',
+      message: "Invalid or expired token",
     });
   }
 };
@@ -80,7 +80,7 @@ export const optionalAuth: RequestHandler = async (req, res, next) => {
 
     const payload = verifyToken(accessToken);
 
-    if (payload.type !== 'access') {
+    if (payload.type !== "access") {
       return next();
     }
 
@@ -109,4 +109,3 @@ export const optionalAuth: RequestHandler = async (req, res, next) => {
     next();
   }
 };
-

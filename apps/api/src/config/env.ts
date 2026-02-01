@@ -32,7 +32,8 @@ const envSchema = z.object({
     .enum(["development", "staging", "production"])
     .default("development"),
   PORT: z.coerce.number().default(3000),
-  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+  // CORS için; tek URL veya virgülle ayrılmış liste (örn. https://emc3test.netlify.app,https://staging.emc3.app)
+  FRONTEND_URL: z.string().default("http://localhost:5173"),
   API_URL: z.string().url().default("http://localhost:3000"),
 
   // Rate limiting
