@@ -1,6 +1,6 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
-import { env } from '../config/env.js';
+import { env } from "../config/env.js";
 
 export class EmailService {
   private transporter: nodemailer.Transporter;
@@ -9,7 +9,7 @@ export class EmailService {
     this.transporter = nodemailer.createTransport({
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465,
+      secure: false, // Brevo uses STARTTLS on port 587
       auth: env.SMTP_USER
         ? {
             user: env.SMTP_USER,
@@ -29,7 +29,7 @@ export class EmailService {
     await this.transporter.sendMail({
       from: `"e=mc³" <${env.EMAIL_FROM}>`,
       to,
-      subject: 'Email Adresinizi Doğrulayın - e=mc³',
+      subject: "Email Adresinizi Doğrulayın - e=mc³",
       html: this.getVerificationEmailHtml(verificationUrl),
       text: this.getVerificationEmailText(verificationUrl),
     });
@@ -108,7 +108,7 @@ Bu link 24 saat geçerlidir. Eğer bu işlemi siz yapmadıysanız, bu emaili gö
     await this.transporter.sendMail({
       from: `"e=mc³" <${env.EMAIL_FROM}>`,
       to,
-      subject: 'Şifre Sıfırlama - e=mc³',
+      subject: "Şifre Sıfırlama - e=mc³",
       html: this.getPasswordResetEmailHtml(resetUrl),
       text: this.getPasswordResetEmailText(resetUrl),
     });
@@ -183,4 +183,3 @@ Eğer bu talebi siz yapmadıysanız, bu emaili görmezden gelebilirsiniz. Hesab�
     `;
   }
 }
-
