@@ -49,9 +49,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.3
-      resend:
-        specifier: ^4.0.0
-        version: 4.8.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      nodemailer:
+        specifier: ^7.0.12
+        version: 7.0.13
       sanitize-html:
         specifier: ^2.17.0
         version: 2.17.0
@@ -83,6 +83,9 @@ importers:
       "@types/node":
         specifier: ^20.11.0
         version: 20.19.30
+      "@types/nodemailer":
+        specifier: ^7.0.5
+        version: 7.0.9
       "@types/sanitize-html":
         specifier: ^2.16.0
         version: 2.16.0
@@ -990,16 +993,6 @@ packages:
         integrity: sha512-pHhpQdr1UPFpt+zFfnPazhulaZYCUqeIcPpJViYoq9R+D/yw4fjE+CtnsnKzPYm0ddUbeXUzjGVGIRVgPDCk4Q==,
       }
 
-  "@react-email/render@1.1.2":
-    resolution:
-      {
-        integrity: sha512-RnRehYN3v9gVlNMehHPHhyp2RQo7+pSkHDtXPvg3s0GbzM9SQMW4Qrf8GRNvtpLC4gsI+Wt0VatNRUFqjvevbw==,
-      }
-    engines: { node: ">=18.0.0" }
-    peerDependencies:
-      react: ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
-
   "@remix-run/router@1.23.2":
     resolution:
       {
@@ -1219,12 +1212,6 @@ packages:
         integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==,
       }
 
-  "@selderee/plugin-htmlparser2@0.11.0":
-    resolution:
-      {
-        integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==,
-      }
-
   "@sinclair/typebox@0.27.8":
     resolution:
       {
@@ -1406,6 +1393,12 @@ packages:
     resolution:
       {
         integrity: sha512-WJtwWJu7UdlvzEAUm484QNg5eAoq5QR08KDNx7g45Usrs2NtOPiX8ugDqmKdXkyL03rBqU5dYNYVQetEpBHq2g==,
+      }
+
+  "@types/nodemailer@7.0.9":
+    resolution:
+      {
+        integrity: sha512-vI8oF1M+8JvQhsId0Pc38BdUP2evenIIys7c7p+9OZXSPOH5c1dyINP1jT8xQ2xPuBUXmIC87s+91IZMDjH8Ow==,
       }
 
   "@types/prop-types@15.7.15":
@@ -2689,12 +2682,6 @@ packages:
         integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==,
       }
 
-  fast-deep-equal@2.0.1:
-    resolution:
-      {
-        integrity: sha512-bCK/2Z4zLidyB4ReuIsvALH6w31YfAQDmXMqMx6FyfHqvBxtjC0eRumeSu4Bs3XtXwpyIywtSTrVT99BxY1f9w==,
-      }
-
   fast-deep-equal@3.1.3:
     resolution:
       {
@@ -3027,13 +3014,6 @@ packages:
         integrity: sha512-ZRiwvN089JfMXokizgqEPXsl2Guk094yExfoDXR0cBYWxtBbaSww/w+vT4WEJsBW2iTUi1GgZ6swmoug3Oy4Xw==,
       }
     engines: { node: ">=16.0.0" }
-
-  html-to-text@9.0.5:
-    resolution:
-      {
-        integrity: sha512-qY60FjREgVZL03vJU6IfMV4GDjGBIoOyvuFdpBDIX9yTlDw0TjxVBQp+P8NvpdIXNJvfWBTNul7fsAQJq2FNpg==,
-      }
-    engines: { node: ">=14" }
 
   html-url-attributes@3.0.1:
     resolution:
@@ -3500,12 +3480,6 @@ packages:
     resolution:
       {
         integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==,
-      }
-
-  leac@0.6.0:
-    resolution:
-      {
-        integrity: sha512-y+SqErxb8h7nE/fiEX07jsbuhrpO9lL8eca7/Y1nuWV2moNlXhyd59iDGcRf6moVyDMbmTNzL40SUyrFU/yDpg==,
       }
 
   levn@0.4.1:
@@ -4074,6 +4048,13 @@ packages:
         integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==,
       }
 
+  nodemailer@7.0.13:
+    resolution:
+      {
+        integrity: sha512-PNDFSJdP+KFgdsG3ZzMXCgquO7I6McjY2vlqILjtJd0hy8wEvtugS9xKRF2NWlPNGxvLCXlTNIae4serI7dinw==,
+      }
+    engines: { node: ">=6.0.0" }
+
   normalize-path@3.0.0:
     resolution:
       {
@@ -4232,12 +4213,6 @@ packages:
         integrity: sha512-/2qh0lav6CmI15FzA3i/2Bzk2zCgQhGMkvhOhKNcBVQ1ldgpbfiNTVslmooUmWJcADi1f1kIeynbDRVzNlfR6Q==,
       }
 
-  parseley@0.12.1:
-    resolution:
-      {
-        integrity: sha512-e6qHKe3a9HWr0oMRVDTRhKce+bRO8VGQR3NyVwcjwrbhMmFCX9KszEV35+rn4AdilFAq9VPxP/Fe1wC9Qjd2lw==,
-      }
-
   parseurl@1.3.3:
     resolution:
       {
@@ -4308,12 +4283,6 @@ packages:
     resolution:
       {
         integrity: sha512-Dp6zGqpTdETdR63lehJYPeIOqpiNBNtc7BpWSLrOje7UaIsE5aY92r/AunQA7rsXvet3lrJ3JnZX29UPTKXyKQ==,
-      }
-
-  peberminta@0.9.0:
-    resolution:
-      {
-        integrity: sha512-XIxfHpEuSJbITd1H3EeQwpcZbTLHc+VVr8ANI9t5sit565tsI4/xK3KWTUFE2e6QiangUkh3B0jihzmGnNrRsQ==,
       }
 
   picocolors@1.1.1:
@@ -4647,12 +4616,6 @@ packages:
       "@types/react": ">=18"
       react: ">=18"
 
-  react-promise-suspense@0.3.4:
-    resolution:
-      {
-        integrity: sha512-I42jl7L3Ze6kZaq+7zXWSunBa3b1on5yfvUW6Eo/3fFOj6dZ5Bqmcd264nJbTK/gn1HjjILAjSwnZbV4RpSaNQ==,
-      }
-
   react-refresh@0.17.0:
     resolution:
       {
@@ -4751,13 +4714,6 @@ packages:
       {
         integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==,
       }
-
-  resend@4.8.0:
-    resolution:
-      {
-        integrity: sha512-R8eBOFQDO6dzRTDmaMEdpqrkmgSjPpVXt4nGfWsZdYOet0kqra0xgbvTES6HmCriZEXbmGk3e0DiGIaLFTFSHA==,
-      }
-    engines: { node: ">=18" }
 
   resolve-from@4.0.0:
     resolution:
@@ -4872,12 +4828,6 @@ packages:
     resolution:
       {
         integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==,
-      }
-
-  selderee@0.11.0:
-    resolution:
-      {
-        integrity: sha512-5TF+l7p4+OsnP8BCCvSyZiSPc4x4//p5uPwK8TCnVPJYRmU2aYKMpOXvw8zM5a5JvuuCGN1jmsMwuU2W02ukfA==,
       }
 
   semver@6.3.1:
@@ -6050,14 +6000,6 @@ snapshots:
     dependencies:
       "@prisma/debug": 5.22.0
 
-  "@react-email/render@1.1.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)":
-    dependencies:
-      html-to-text: 9.0.5
-      prettier: 3.8.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      react-promise-suspense: 0.3.4
-
   "@remix-run/router@1.23.2": {}
 
   "@rolldown/pluginutils@1.0.0-beta.27": {}
@@ -6138,11 +6080,6 @@ snapshots:
     optional: true
 
   "@rtsao/scc@1.1.0": {}
-
-  "@selderee/plugin-htmlparser2@0.11.0":
-    dependencies:
-      domhandler: 5.0.3
-      selderee: 0.11.0
 
   "@sinclair/typebox@0.27.8": {}
 
@@ -6256,6 +6193,10 @@ snapshots:
   "@types/node@20.19.30":
     dependencies:
       undici-types: 6.21.0
+
+  "@types/nodemailer@7.0.9":
+    dependencies:
+      "@types/node": 20.19.30
 
   "@types/prop-types@15.7.15": {}
 
@@ -7249,8 +7190,6 @@ snapshots:
 
   extend@3.0.2: {}
 
-  fast-deep-equal@2.0.1: {}
-
   fast-deep-equal@3.1.3: {}
 
   fast-glob@3.3.3:
@@ -7464,14 +7403,6 @@ snapshots:
       "@types/hast": 3.0.4
 
   helmet@7.2.0: {}
-
-  html-to-text@9.0.5:
-    dependencies:
-      "@selderee/plugin-htmlparser2": 0.11.0
-      deepmerge: 4.3.1
-      dom-serializer: 2.0.0
-      htmlparser2: 8.0.2
-      selderee: 0.11.0
 
   html-url-attributes@3.0.1: {}
 
@@ -7736,8 +7667,6 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
-
-  leac@0.6.0: {}
 
   levn@0.4.1:
     dependencies:
@@ -8239,6 +8168,8 @@ snapshots:
 
   node-releases@2.0.27: {}
 
+  nodemailer@7.0.13: {}
+
   normalize-path@3.0.0: {}
 
   npm-run-path@5.3.0:
@@ -8348,11 +8279,6 @@ snapshots:
 
   parse-srcset@1.0.2: {}
 
-  parseley@0.12.1:
-    dependencies:
-      leac: 0.6.0
-      peberminta: 0.9.0
-
   parseurl@1.3.3: {}
 
   path-exists@4.0.0: {}
@@ -8374,8 +8300,6 @@ snapshots:
   pathe@2.0.3: {}
 
   pathval@1.1.1: {}
-
-  peberminta@0.9.0: {}
 
   picocolors@1.1.1: {}
 
@@ -8534,10 +8458,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  react-promise-suspense@0.3.4:
-    dependencies:
-      fast-deep-equal: 2.0.1
-
   react-refresh@0.17.0: {}
 
   react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
@@ -8631,13 +8551,6 @@ snapshots:
       "@types/mdast": 4.0.4
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
-
-  resend@4.8.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      "@react-email/render": 1.1.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-    transitivePeerDependencies:
-      - react
-      - react-dom
 
   resolve-from@4.0.0: {}
 
@@ -8738,10 +8651,6 @@ snapshots:
   scheduler@0.23.2:
     dependencies:
       loose-envify: 1.4.0
-
-  selderee@0.11.0:
-    dependencies:
-      parseley: 0.12.1
 
   semver@6.3.1: {}
 
