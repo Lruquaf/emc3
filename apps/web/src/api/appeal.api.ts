@@ -8,12 +8,12 @@ export const appealApi = {
   },
 
   /** Create a new appeal */
-  create: async (reason: string): Promise<MyAppealDTO> => {
-    return apiClient.post<MyAppealDTO>('/appeals', { reason });
+  create: async (message: string): Promise<MyAppealDTO> => {
+    return apiClient.post<MyAppealDTO>('/appeals', { message });
   },
 
   /** Send a message in the appeal */
-  sendMessage: async (message: string): Promise<{ id: string }> => {
-    return apiClient.post<{ id: string }>('/appeals/message', { message });
+  sendMessage: async (appealId: string, message: string): Promise<{ id: string }> => {
+    return apiClient.post<{ id: string }>(`/appeals/${appealId}/message`, { message });
   },
 };

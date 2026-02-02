@@ -18,7 +18,7 @@ export function AppealPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (reason: string) => appealApi.create(reason),
+    mutationFn: (message: string) => appealApi.create(message),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appeal', 'me'] });
       setNewMessage('');
@@ -26,7 +26,8 @@ export function AppealPage() {
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: (message: string) => appealApi.sendMessage(message),
+    mutationFn: ({ appealId, message }: { appealId: string; message: string }) =>
+      appealApi.sendMessage(appealId, message),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appeal', 'me'] });
       setNewMessage('');
@@ -86,16 +87,45 @@ export function AppealPage() {
             <p className="text-sm text-muted mb-4">
               Banınızın hatalı olduğunu düşünüyorsanız, aşağıdaki formu doldurarak itiraz edebilirsiniz.
             </p>
-            <textarea
-              placeholder="İtiraz sebebinizi detaylı açıklayın..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="w-full px-4 py-3 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent resize-none h-32"
-            />
+            <div>
+              <label htmlFor="appeal-message" className="block text-sm font-medium text-text mb-2">
+                İtiraz sebebi <span className="text-danger">*</span>
+              </label>
+              <textarea
+                id="appeal-message"
+                placeholder="İtiraz sebebinizi detaylı açıklayın (en az 20 karakter)..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="w-full px-4 py-3 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent resize-none h-32"
+                required
+              />
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-xs text-muted">
+                  En az 20 karakter giriniz (zorunlu)
+                </span>
+                <span
+                  className={`text-xs font-medium ${
+                    newMessage.trim().length < 20
+                      ? 'text-warning'
+                      : newMessage.trim().length > 2000
+                      ? 'text-danger'
+                      : 'text-muted'
+                  }`}
+                >
+                  {newMessage.trim().length < 20
+                    ? `${newMessage.trim().length}/20`
+                    : `${newMessage.trim().length}/2000`}
+                </span>
+              </div>
+            </div>
             <button
-              onClick={() => createMutation.mutate(newMessage)}
-              disabled={!newMessage.trim() || createMutation.isPending}
-              className="mt-4 w-full px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50"
+              onClick={() => createMutation.mutate(newMessage.trim())}
+              disabled={
+                newMessage.trim().length < 20 ||
+                newMessage.trim().length > 2000 ||
+                createMutation.isPending
+              }
+              className="mt-4 w-full px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createMutation.isPending ? 'Gönderiliyor...' : 'İtiraz Et'}
             </button>
@@ -205,22 +235,50 @@ export function AppealPage() {
       {appeal.status === 'OPEN' && (
         <div className="bg-surface border-t border-border">
           <div className="max-w-2xl mx-auto px-4 py-4">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                placeholder="Mesajınızı yazın..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && newMessage.trim() && sendMessageMutation.mutate(newMessage)}
-                className="flex-1 px-4 py-3 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              <button
-                onClick={() => sendMessageMutation.mutate(newMessage)}
-                disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                className="px-4 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50"
-              >
-                <Send size={20} />
-              </button>
+            <div className="space-y-2">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="Mesajınızı yazın (en az 5 karakter)..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === 'Enter' &&
+                    newMessage.trim().length >= 5 &&
+                    appeal &&
+                    sendMessageMutation.mutate({ appealId: appeal.id, message: newMessage.trim() })
+                  }
+                  className="flex-1 px-4 py-3 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+                <button
+                  onClick={() =>
+                    appeal && sendMessageMutation.mutate({ appealId: appeal.id, message: newMessage.trim() })
+                  }
+                  disabled={
+                    newMessage.trim().length < 5 ||
+                    newMessage.trim().length > 2000 ||
+                    sendMessageMutation.isPending
+                  }
+                  className="px-4 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send size={20} />
+                </button>
+              </div>
+              <div className="flex justify-end">
+                <span
+                  className={`text-xs ${
+                    newMessage.trim().length > 0 && newMessage.trim().length < 5
+                      ? 'text-warning'
+                      : newMessage.trim().length > 2000
+                      ? 'text-danger'
+                      : 'text-muted'
+                  }`}
+                >
+                  {newMessage.trim().length < 5
+                    ? `${newMessage.trim().length}/5`
+                    : `${newMessage.trim().length}/2000`}
+                </span>
+              </div>
             </div>
           </div>
         </div>
