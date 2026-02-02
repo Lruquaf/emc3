@@ -48,18 +48,19 @@ export function generateUploadSignature(userId: string): {
 
   const timestamp = Math.round(new Date().getTime() / 1000);
   const folder = `avatars/${userId}`;
+  const maxFileSize = (5 * 1024 * 1024).toString(); // 5MB as string
 
-  // Cloudinary signature requires parameters in alphabetical order
-  // and transformation as a string format
-  const params: Record<string, string | number> = {
+  // Cloudinary signature requires ALL parameters as strings
+  // Only include parameters that will be sent in the upload request
+  // Transformation is applied post-upload via URL, not during upload
+  const params: Record<string, string> = {
     allowed_formats: "jpg,jpeg,png,webp",
-    folder,
-    max_file_size: 5 * 1024 * 1024, // 5MB
-    timestamp,
-    transformation: "w_400,h_400,c_fill,g_face,q_auto,f_auto",
+    folder: folder,
+    max_file_size: maxFileSize,
+    timestamp: timestamp.toString(),
   };
 
-  // Generate signature
+  // Generate signature - Cloudinary will sort parameters alphabetically internally
   const signature = cloudinary.utils.api_sign_request(
     params,
     env.CLOUDINARY_API_SECRET!,

@@ -54,16 +54,19 @@ export function AvatarUpload({
       const signatureData = await authApi.getAvatarUploadSignature();
 
       // Upload to Cloudinary using signed upload
-      // Parameters must match the signature order (alphabetical)
+      // Parameters must EXACTLY match what was used to generate the signature
+      // Order doesn't matter, but values must match exactly
+      // Note: transformation is applied post-upload via URL, not during upload
       const formData = new FormData();
       formData.append('file', file);
+      // These parameters must match the signature generation exactly
       formData.append('allowed_formats', 'jpg,jpeg,png,webp');
       formData.append('api_key', signatureData.apiKey);
       formData.append('folder', signatureData.folder);
       formData.append('max_file_size', (5 * 1024 * 1024).toString());
       formData.append('signature', signatureData.signature);
       formData.append('timestamp', signatureData.timestamp.toString());
-      formData.append('transformation', 'w_400,h_400,c_fill,g_face,q_auto,f_auto');
+      // Transformation is NOT included in signature, will be applied via URL
 
       const uploadResponse = await fetch(
         `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
@@ -79,7 +82,18 @@ export function AvatarUpload({
       }
 
       const result = await uploadResponse.json();
-      const uploadedUrl = result.secure_url;
+      let uploadedUrl = result.secure_url;
+
+      // Apply transformation to the uploaded image URL
+      // Cloudinary URL format: .../upload/{transformation}/{public_id}
+      // Insert transformation after /upload/ and before the public_id
+      if (uploadedUrl && !uploadedUrl.includes('/w_400')) {
+        // Replace /upload/ with /upload/{transformation}/
+        uploadedUrl = uploadedUrl.replace(
+          '/upload/',
+          '/upload/w_400,h_400,c_fill,g_face,q_auto,f_auto/'
+        );
+      }
 
       // Update profile with new avatar URL
       await authApi.updateProfile({ avatarUrl: uploadedUrl });
