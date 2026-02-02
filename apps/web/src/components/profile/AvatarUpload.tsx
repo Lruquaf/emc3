@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
-import { v2 as cloudinary } from 'cloudinary';
 import { authApi } from '@/api/auth.api';
 import { cn } from '@/utils/cn';
 
@@ -55,18 +54,16 @@ export function AvatarUpload({
       const signatureData = await authApi.getAvatarUploadSignature();
 
       // Upload to Cloudinary using signed upload
+      // Parameters must match the signature order (alphabetical)
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('api_key', signatureData.apiKey);
-      formData.append('timestamp', signatureData.timestamp.toString());
-      formData.append('signature', signatureData.signature);
-      formData.append('folder', signatureData.folder);
       formData.append('allowed_formats', 'jpg,jpeg,png,webp');
+      formData.append('api_key', signatureData.apiKey);
+      formData.append('folder', signatureData.folder);
       formData.append('max_file_size', (5 * 1024 * 1024).toString());
-      formData.append(
-        'transformation',
-        'w_400,h_400,c_fill,g_face,q_auto,f_auto'
-      );
+      formData.append('signature', signatureData.signature);
+      formData.append('timestamp', signatureData.timestamp.toString());
+      formData.append('transformation', 'w_400,h_400,c_fill,g_face,q_auto,f_auto');
 
       const uploadResponse = await fetch(
         `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
@@ -86,6 +83,8 @@ export function AvatarUpload({
 
       // Update profile with new avatar URL
       await authApi.updateProfile({ avatarUrl: uploadedUrl });
+      // Update local state immediately
+      setPreview(uploadedUrl);
       onUploadComplete(uploadedUrl);
       setError(null);
     } catch (err) {

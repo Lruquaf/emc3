@@ -49,24 +49,19 @@ export function generateUploadSignature(userId: string): {
   const timestamp = Math.round(new Date().getTime() / 1000);
   const folder = `avatars/${userId}`;
 
+  // Cloudinary signature requires parameters in alphabetical order
+  // and transformation as a string format
+  const params: Record<string, string | number> = {
+    allowed_formats: "jpg,jpeg,png,webp",
+    folder,
+    max_file_size: 5 * 1024 * 1024, // 5MB
+    timestamp,
+    transformation: "w_400,h_400,c_fill,g_face,q_auto,f_auto",
+  };
+
   // Generate signature
   const signature = cloudinary.utils.api_sign_request(
-    {
-      timestamp,
-      folder,
-      allowed_formats: ["jpg", "jpeg", "png", "webp"],
-      max_file_size: 5 * 1024 * 1024, // 5MB
-      transformation: [
-        {
-          width: 400,
-          height: 400,
-          crop: "fill",
-          gravity: "face",
-          quality: "auto",
-          format: "auto",
-        },
-      ],
-    },
+    params,
     env.CLOUDINARY_API_SECRET!,
   );
 

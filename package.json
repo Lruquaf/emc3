@@ -60,7 +60,7 @@
       "prettier --write"
     ],
     "packages/**/*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
+      "bash scripts/lint-staged-packages.sh",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [

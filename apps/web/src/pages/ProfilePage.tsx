@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FileText, Users, UserPlus, Pencil, Loader2, ExternalLink } from 'lucide-react';
+import { FileText, Users, UserPlus, Pencil, ExternalLink } from 'lucide-react';
 
 import { useUserProfile, useGlobalFeed } from '../hooks/useFeed';
 import { useFollowers, useFollowing } from '../hooks/useFollow';
@@ -22,7 +22,7 @@ export function ProfilePage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const createRevision = useCreateRevision();
 
-  const { data: profile, isLoading, isError, error } = useUserProfile(username ?? '');
+  const { data: profile, isLoading, isError, error, refetch: refetchProfile } = useUserProfile(username ?? '');
   const { data: articlesData, isLoading: articlesLoading } = useGlobalFeed({
     authorUsername: username,
     limit: 20,
@@ -55,7 +55,7 @@ export function ProfilePage() {
       <div className="mx-auto max-w-2xl px-4 py-12 text-center">
         <p className="text-neutral-600">Geçersiz profil.</p>
         <Link to="/feed" className="mt-4 inline-block text-emerald-600 hover:underline">
-          Keşfet'e dön
+          Keşfet&apos;e dön
         </Link>
       </div>
     );
@@ -78,7 +78,7 @@ export function ProfilePage() {
           {notFound ? 'Kullanıcı bulunamadı.' : 'Profil yüklenirken bir hata oluştu.'}
         </p>
         <Link to="/feed" className="mt-4 inline-block text-emerald-600 hover:underline">
-          Keşfet'e dön
+          Keşfet&apos;e dön
         </Link>
       </div>
     );
@@ -267,7 +267,16 @@ export function ProfilePage() {
         )}
       </div>
 
-      <ProfileEditModal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} />
+      <ProfileEditModal 
+        isOpen={editModalOpen} 
+        onClose={() => {
+          setEditModalOpen(false);
+          // Refresh profile data after modal closes
+          if (isOwnProfile) {
+            refetchProfile();
+          }
+        }} 
+      />
     </div>
   );
 }

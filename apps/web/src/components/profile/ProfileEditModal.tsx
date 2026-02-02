@@ -32,10 +32,7 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
     }
   }, [
     user?.id,
-    user?.profile?.displayName,
-    user?.profile?.about,
-    user?.profile?.avatarUrl,
-    user?.profile?.socialLinks,
+    user?.profile,
     isOpen,
   ]);
 
@@ -50,8 +47,10 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
         avatarUrl: avatarUrl || null,
         socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : null,
       });
+      // Update user state with the response from API immediately
       await refreshUser();
       setMessage({ type: 'success', text: 'Profil güncellendi.' });
+      // Close modal after a short delay to show success message
       setTimeout(() => {
         onClose();
       }, 800);
