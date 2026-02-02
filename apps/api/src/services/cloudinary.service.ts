@@ -48,15 +48,13 @@ export function generateUploadSignature(userId: string): {
 
   const timestamp = Math.round(new Date().getTime() / 1000);
   const folder = `avatars/${userId}`;
-  const maxFileSize = (5 * 1024 * 1024).toString(); // 5MB as string
 
-  // Cloudinary signature requires ALL parameters as strings
-  // Only include parameters that will be sent in the upload request
-  // Transformation is applied post-upload via URL, not during upload
+  // Cloudinary signature requires ONLY parameters that are validated in signature
+  // max_file_size is NOT included in signature validation (it's checked during upload)
+  // Only include: allowed_formats, folder, timestamp
   const params: Record<string, string> = {
     allowed_formats: "jpg,jpeg,png,webp",
     folder: folder,
-    max_file_size: maxFileSize,
     timestamp: timestamp.toString(),
   };
 
