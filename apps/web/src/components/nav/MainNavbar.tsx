@@ -37,12 +37,13 @@ export function MainNavbar() {
   const handleLogout = async () => {
     setDropdownOpen(false);
     await logout();
-    navigate('/feed');
+    navigate(user?.isBanned ? '/' : '/feed');
   };
 
   const isAdmin = hasRole('ADMIN');
   const isReviewer = hasRole('REVIEWER');
   const hasModeratorAccess = isAdmin || isReviewer;
+  const isBanned = user?.isBanned ?? false;
 
   // Determine admin panel entry point based on role
   const getAdminPath = () => {
@@ -56,44 +57,48 @@ export function MainNavbar() {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <NavLink
-          to="/feed"
+          to={isBanned ? '/me/appeal' : '/feed'}
           className="flex items-center gap-2 font-serif text-xl font-bold text-accent transition-opacity hover:opacity-90"
         >
           e=mc³
         </NavLink>
 
-        {/* Nav links */}
+        {/* Nav links - hidden for banned users (flows closed) */}
         <nav className="flex items-center gap-1 sm:gap-2">
-          <NavLink
-            to="/feed"
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-accent/10 text-accent'
-                  : 'text-muted hover:bg-border/50 hover:text-text'
-              )
-            }
-          >
-            <Compass className="h-4 w-4" />
-            <span className="hidden sm:inline">Keşfet</span>
-          </NavLink>
+          {!isBanned && (
+            <>
+              <NavLink
+                to="/feed"
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-muted hover:bg-border/50 hover:text-text'
+                  )
+                }
+              >
+                <Compass className="h-4 w-4" />
+                <span className="hidden sm:inline">Keşfet</span>
+              </NavLink>
 
-          {isAuthenticated && (
-            <NavLink
-              to="/feed/following"
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-muted hover:bg-border/50 hover:text-text'
-                )
-              }
-            >
-              <Rss className="h-4 w-4" />
-              <span className="hidden sm:inline">Akışım</span>
-            </NavLink>
+              {isAuthenticated && (
+                <NavLink
+                  to="/feed/following"
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-accent/10 text-accent'
+                        : 'text-muted hover:bg-border/50 hover:text-text'
+                    )
+                  }
+                >
+                  <Rss className="h-4 w-4" />
+                  <span className="hidden sm:inline">Akışım</span>
+                </NavLink>
+              )}
+            </>
           )}
 
           {!isLoading && (
@@ -164,6 +169,18 @@ export function MainNavbar() {
                       className="absolute right-0 mt-1 w-52 rounded-lg border border-border bg-surface py-1 shadow-lg"
                       role="menu"
                     >
+                      {isBanned ? (
+                        <Link
+                          to="/me/appeal"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"
+                          role="menuitem"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <User className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>İtiraz Et</span>
+                        </Link>
+                      ) : (
+                        <>
                       <Link
                         to={user ? `/user/${user.username}` : '/feed'}
                         className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"
@@ -200,7 +217,9 @@ export function MainNavbar() {
                         <Bookmark className="h-3.5 w-3.5 flex-shrink-0" />
                         <span>Kaydettiklerim</span>
                       </Link>
-                      {hasModeratorAccess && (
+                      </>
+                      )}
+                      {!isBanned && hasModeratorAccess && (
                         <Link
                           to={getAdminPath()}
                           className="flex items-center gap-2 px-3 py-1.5 text-sm text-text transition-colors hover:bg-bg"

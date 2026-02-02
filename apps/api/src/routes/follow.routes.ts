@@ -4,6 +4,7 @@ import * as followController from '../controllers/follow.controller.js';
 import { optionalAuth, requireAuth } from '../middlewares/requireAuth.js';
 import { requireVerifiedEmail } from '../middlewares/requireVerifiedEmail.js';
 import { rejectBannedForWrites } from '../middlewares/rejectBannedForWrites.js';
+import { rejectBannedForContentRead } from '../middlewares/rejectBannedForContentRead.js';
 import { validateParams, validateQuery } from '../middlewares/validate.js';
 import { rateLimit } from '../middlewares/rateLimit.js';
 import {
@@ -21,6 +22,7 @@ export const followRouter = Router();
 followRouter.get(
   '/users/:username',
   optionalAuth,
+  rejectBannedForContentRead,
   validateParams(UsernameParamSchema),
   followController.getProfile
 );
@@ -55,19 +57,21 @@ followRouter.delete(
 // Follower/Following List Routes
 // ═══════════════════════════════════════════════════════════
 
-// Get user's followers
+// Get user's followers (banned users blocked)
 followRouter.get(
   '/users/:username/followers',
   optionalAuth,
+  rejectBannedForContentRead,
   validateParams(UsernameParamSchema),
   validateQuery(FollowListQuerySchema),
   followController.getFollowers
 );
 
-// Get users that a user is following
+// Get users that a user is following (banned users blocked)
 followRouter.get(
   '/users/:username/following',
   optionalAuth,
+  rejectBannedForContentRead,
   validateParams(UsernameParamSchema),
   validateQuery(FollowListQuerySchema),
   followController.getFollowing

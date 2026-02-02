@@ -4,6 +4,7 @@ import * as articleController from '../controllers/article.controller.js';
 import { optionalAuth, requireAuth } from '../middlewares/requireAuth.js';
 import { requireVerifiedEmail } from '../middlewares/requireVerifiedEmail.js';
 import { rejectBannedForWrites } from '../middlewares/rejectBannedForWrites.js';
+import { rejectBannedForContentRead } from '../middlewares/rejectBannedForContentRead.js';
 import { validate, validateParams } from '../middlewares/validate.js';
 import { rateLimit } from '../middlewares/rateLimit.js';
 import {
@@ -17,10 +18,11 @@ export const articlesRouter = Router();
 // Public Routes
 // ═══════════════════════════════════════════════════════════
 
-// Read article by ID (public; optionalAuth for viewerInteraction when logged in)
+// Read article by ID (public; optionalAuth for viewerInteraction; banned users blocked)
 articlesRouter.get(
   '/:id',
   optionalAuth,
+  rejectBannedForContentRead,
   validateParams(articleIdParamSchema),
   articleController.getArticleById
 );

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import * as feedController from '../controllers/feed.controller.js';
 import { requireAuth, optionalAuth } from '../middlewares/requireAuth.js';
 import { rejectBannedForWrites } from '../middlewares/rejectBannedForWrites.js';
+import { rejectBannedForContentRead } from '../middlewares/rejectBannedForContentRead.js';
 import { validateQuery } from '../middlewares/validate.js';
 import {
   GlobalFeedQuerySchema,
@@ -16,10 +17,11 @@ export const feedRouter = Router();
 // Feed Routes
 // ═══════════════════════════════════════════════════════════
 
-// Global feed (public, optional auth for viewer interactions)
+// Global feed (public, optional auth for viewer interactions; banned users blocked)
 feedRouter.get(
   '/feed/global',
   optionalAuth,
+  rejectBannedForContentRead,
   validateQuery(GlobalFeedQuerySchema),
   feedController.getGlobalFeed
 );
@@ -37,10 +39,11 @@ feedRouter.get(
 // Search Routes
 // ═══════════════════════════════════════════════════════════
 
-// Search users
+// Search users (banned users blocked)
 feedRouter.get(
   '/search/users',
   optionalAuth,
+  rejectBannedForContentRead,
   validateQuery(UserSearchQuerySchema),
   feedController.searchUsers
 );

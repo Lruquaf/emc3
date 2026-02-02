@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import * as meController from '../controllers/me.controller.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
+import { rejectBannedForWrites } from '../middlewares/rejectBannedForWrites.js';
 import { validate, validateQuery } from '../middlewares/validate.js';
 import {
   myRevisionsQuerySchema,
@@ -19,6 +20,7 @@ export const meRouter = Router();
 meRouter.patch(
   '/profile',
   requireAuth,
+  rejectBannedForWrites,
   validate(updateProfileSchema),
   meController.updateProfile
 );
@@ -26,6 +28,7 @@ meRouter.patch(
 meRouter.get(
   '/avatar/upload-signature',
   requireAuth,
+  rejectBannedForWrites,
   meController.getAvatarUploadSignature
 );
 
@@ -36,6 +39,7 @@ meRouter.get(
 meRouter.get(
   '/revisions',
   requireAuth,
+  rejectBannedForWrites,
   validateQuery(myRevisionsQuerySchema),
   meController.getMyRevisions
 );
@@ -47,6 +51,7 @@ meRouter.get(
 meRouter.post(
   '/change-password',
   requireAuth,
+  rejectBannedForWrites,
   validate(changePasswordSchema),
   meController.changePassword
 );

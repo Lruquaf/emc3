@@ -5,6 +5,7 @@ import { LikeButton } from './LikeButton';
 import { SaveButton } from './SaveButton';
 import { ArticleStats } from './ArticleStats';
 import { CategoryBadge } from '../category/CategoryBadge';
+import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../utils/cn';
 import { formatHybridDateSafe } from '../../utils/date';
 import type { FeedItemDTO } from '@emc3/shared';
@@ -24,6 +25,11 @@ export function FeedCard({
   onEdit,
   className,
 }: FeedCardProps) {
+  const { user } = useAuth();
+  const viewerIsBanned = user?.isBanned ?? false;
+  const canInteract = showInteractions && !viewerIsBanned;
+  const canClickArticle = !viewerIsBanned;
+
   return (
     <article
       className={cn(
@@ -79,13 +85,22 @@ export function FeedCard({
         <ArticleStats counts={article.counts} size="sm" />
       </div>
 
-      {/* Article Content */}
-      <Link to={`/article/${article.id}`} className="block">
-        <h2 className="mb-2 text-xl font-bold text-neutral-900 hover:text-emerald-700">
-          {article.title}
-        </h2>
-        <p className="mb-4 line-clamp-2 text-neutral-600">{article.summary}</p>
-      </Link>
+      {/* Article Content - no link for banned users */}
+      {canClickArticle ? (
+        <Link to={`/article/${article.id}`} className="block">
+          <h2 className="mb-2 text-xl font-bold text-neutral-900 hover:text-emerald-700">
+            {article.title}
+          </h2>
+          <p className="mb-4 line-clamp-2 text-neutral-600">{article.summary}</p>
+        </Link>
+      ) : (
+        <div className="block cursor-not-allowed opacity-75">
+          <h2 className="mb-2 text-xl font-bold text-neutral-900">
+            {article.title}
+          </h2>
+          <p className="mb-4 line-clamp-2 text-neutral-600">{article.summary}</p>
+        </div>
+      )}
 
       {/* Categories */}
       {article.categories.length > 0 && (
@@ -101,10 +116,10 @@ export function FeedCard({
         </div>
       )}
 
-      {/* Interactions */}
-      {(showInteractions || showEditButton) && (
+      {/* Interactions - hidden for banned users; edit button also hidden */}
+      {(canInteract || (showEditButton && !viewerIsBanned)) && (
         <div className="flex items-center justify-between border-t border-neutral-100 pt-4">
-          {showInteractions && (
+          {canInteract && (
             <div className="flex items-center gap-3">
               <LikeButton
                 articleId={article.id}
@@ -121,7 +136,7 @@ export function FeedCard({
               />
             </div>
           )}
-          {showEditButton && onEdit && (
+          {showEditButton && !viewerIsBanned && onEdit && (
             <button
               type="button"
               onClick={onEdit}

@@ -17,7 +17,7 @@ export function BannedBanner() {
             <div>
               <span className="font-medium text-danger">Hesabınız askıya alındı.</span>
               <span className="text-text ml-2 hidden sm:inline">
-                Okuma işlemleri dışında hiçbir işlem yapamazsınız.
+                Sadece itiraz sayfasına erişebilirsiniz.
               </span>
             </div>
           </div>

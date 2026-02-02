@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from './contexts/AuthContext';
-import { AuthGuard, GuestGuard, VerifiedGuard, RoleGuard } from './components/guards';
+import { AuthGuard, BannedGuard, GuestGuard, VerifiedGuard, RoleGuard } from './components/guards';
 
 // Layouts
 import { AdminLayout } from './layouts/AdminLayout';
@@ -67,7 +67,8 @@ function App() {
           </Route>
 
           {/* Main site: navbar + content */}
-          <Route element={<MainLayout />}>
+          <Route element={<BannedGuard />}>
+            <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/feed" element={<FeedPage />} />
             <Route path="/article/:id" element={<ArticlePage />} />
@@ -98,6 +99,7 @@ function App() {
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />
+          </Route>
           </Route>
         </Routes>
       </BrowserRouter>
