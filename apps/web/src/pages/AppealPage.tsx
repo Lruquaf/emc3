@@ -10,11 +10,17 @@ export function AppealPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const { data: appeal, isLoading, error } = useQuery({
     queryKey: ['appeal', 'me'],
     queryFn: () => appealApi.getMyAppeal(),
     retry: false,
+    // Poll when we have an OPEN appeal so admin messages appear without refresh
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data && data.status === 'OPEN' ? 10000 : false;
+    },
   });
 
   const createMutation = useMutation({
@@ -22,6 +28,7 @@ export function AppealPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appeal', 'me'] });
       setNewMessage('');
+      setShowCreateForm(false);
     },
   });
 
@@ -64,8 +71,9 @@ export function AppealPage() {
     );
   }
 
-  // No appeal yet - show create form
-  if (!appeal || (error as any)?.response?.status === 404) {
+  // No appeal yet, or user chose to create new (after closed appeal) - show create form
+  const hasNoAppeal = !appeal || (error as any)?.response?.status === 404;
+  if (hasNoAppeal || showCreateForm) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-4">
         <div className="bg-surface border border-border rounded-xl p-8 max-w-lg w-full">
@@ -83,6 +91,15 @@ export function AppealPage() {
           </div>
 
           <div className="border-t border-border pt-6">
+            {showCreateForm && appeal && (
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(false)}
+                className="mb-4 text-sm text-muted hover:text-text"
+              >
+                ← Önceki itiraza dön
+              </button>
+            )}
             <h2 className="font-semibold text-text mb-3">İtiraz Oluştur</h2>
             <p className="text-sm text-muted mb-4">
               Banınızın hatalı olduğunu düşünüyorsanız, aşağıdaki formu doldurarak itiraz edebilirsiniz.
@@ -188,7 +205,7 @@ export function AppealPage() {
             </div>
           )}
 
-          {/* Messages */}
+          {/* Messages - Admin on left, user on right; both sides see full conversation */}
           {appeal.messages.map((msg) => (
             <div
               key={msg.id}
@@ -201,8 +218,10 @@ export function AppealPage() {
                     : 'bg-accent text-white'
                 }`}
               >
-                {msg.sender?.isAdmin && (
+                {msg.sender?.isAdmin ? (
                   <p className="text-xs text-accent mb-1 font-medium">Yönetici</p>
+                ) : (
+                  <p className="text-xs text-white/90 mb-1 font-medium">Siz</p>
                 )}
                 <p>{msg.body}</p>
                 <p
@@ -221,10 +240,23 @@ export function AppealPage() {
             <div className="text-center py-6">
               <Clock size={24} className="mx-auto mb-2 text-muted" />
               <p className="text-muted">Bu itiraz kapatılmıştır.</p>
-              {appeal.resolution === 'overturned' && (
+              {appeal.resolution === 'overturned' ? (
                 <p className="text-success mt-2">
                   İtirazınız kabul edildi. Banınız kaldırıldı.
                 </p>
+              ) : (
+                <>
+                  <p className="text-muted mt-2">
+                    Yeni bir itiraz oluşturmak isterseniz aşağıdaki butonu kullanabilirsiniz.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(true)}
+                    className="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90"
+                  >
+                    Yeni İtiraz Oluştur
+                  </button>
+                </>
               )}
             </div>
           )}

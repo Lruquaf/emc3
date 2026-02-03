@@ -39,11 +39,14 @@ export class ConflictError extends Error {
 // USER APPEAL METHODS
 // ═══════════════════════════════════════════════════════════
 
+
 /**
  * Get user's own appeal (banned user only)
+ * Returns OPEN appeal if exists; otherwise most recent CLOSED appeal for viewing history.
+ * This ensures banned user can see admin responses both during and after appeal.
  */
 export async function getMyAppeal(userId: string): Promise<MyAppealDTO | null> {
-  const appeal = await prisma.appeal.findFirst({
+  const openAppeal = await prisma.appeal.findFirst({
     where: { userId, status: 'OPEN' },
     include: {
       messages: {
@@ -60,23 +63,42 @@ export async function getMyAppeal(userId: string): Promise<MyAppealDTO | null> {
     },
   });
 
-  if (!appeal) {
+  const appealToReturn =
+    openAppeal ??
+    (await prisma.appeal.findFirst({
+      where: { userId, status: 'CLOSED' },
+      include: {
+        messages: {
+          include: {
+            sender: {
+              include: {
+                profile: true,
+                roles: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    }));
+
+  if (!appealToReturn) {
     return null;
   }
 
-  // Get ban info
   const ban = await prisma.userBan.findUnique({
     where: { userId },
   });
 
   return {
-    id: appeal.id,
-    status: appeal.status,
-    resolution: appeal.resolution as 'upheld' | 'overturned' | null,
-    messages: appeal.messages.map(mapToMessageDTO),
+    id: appealToReturn.id,
+    status: appealToReturn.status,
+    resolution: appealToReturn.resolution as 'upheld' | 'overturned' | null,
+    messages: appealToReturn.messages.map(mapToMessageDTO),
     banReason: ban?.reason ?? null,
     bannedAt: ban?.bannedAt?.toISOString() ?? null,
-    createdAt: appeal.createdAt.toISOString(),
+    createdAt: appealToReturn.createdAt.toISOString(),
   };
 }
 

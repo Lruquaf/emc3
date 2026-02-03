@@ -30,6 +30,10 @@ export function AdminAppealsPage() {
     queryKey: ['admin', 'appeals', selectedAppeal],
     queryFn: () => (selectedAppeal ? adminAppealsApi.getDetail(selectedAppeal) : null),
     enabled: !!selectedAppeal,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data && data.status === 'OPEN' ? 10000 : false;
+    },
   });
 
   const sendMessageMutation = useMutation({
@@ -135,7 +139,10 @@ export function AdminAppealsPage() {
               newMessage={newMessage}
               onMessageChange={setNewMessage}
               onSendMessage={() =>
-                sendMessageMutation.mutate({ id: appealDetail.id, message: newMessage })
+                sendMessageMutation.mutate({
+                  id: appealDetail.id,
+                  message: newMessage.trim(),
+                })
               }
               onClose={(resolution) =>
                 setCloseModal({ appealId: appealDetail.id, resolution, message: '' })
@@ -284,9 +291,16 @@ function AppealDetailView({
               className={`max-w-[80%] p-3 rounded-lg ${
                 msg.sender?.isAdmin
                   ? 'bg-accent text-white'
-                  : 'bg-bg text-text'
+                  : 'bg-bg text-text border border-border'
               }`}
             >
+              {msg.sender?.isAdmin ? (
+                <p className="text-xs text-white/90 mb-1 font-medium">Yönetici</p>
+              ) : (
+                <p className="text-xs text-muted mb-1 font-medium">
+                  @{msg.sender?.username ?? 'Kullanıcı'}
+                </p>
+              )}
               <p>{msg.body}</p>
               <p
                 className={`text-xs mt-1 ${
@@ -307,15 +321,21 @@ function AppealDetailView({
           <div className="flex gap-2 mb-4">
             <input
               type="text"
-              placeholder="Mesaj yaz..."
+              placeholder="Mesaj yazın (en az 5 karakter)..."
               value={newMessage}
               onChange={(e) => onMessageChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && newMessage.trim() && onSendMessage()}
+              onKeyDown={(e) =>
+                e.key === 'Enter' && newMessage.trim().length >= 5 && onSendMessage()
+              }
               className="flex-1 px-4 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
             />
             <button
               onClick={onSendMessage}
-              disabled={!newMessage.trim() || isSending}
+              disabled={
+                newMessage.trim().length < 5 ||
+                newMessage.trim().length > 2000 ||
+                isSending
+              }
               className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50"
             >
               <Send size={18} />
