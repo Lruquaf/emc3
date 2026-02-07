@@ -229,12 +229,15 @@ export const googleCallback: RequestHandler = async (req, res) => {
     setAuthCookies(res, tokens);
 
     // Redirect to frontend with success (both new and existing users go to feed)
-    const redirectUrl = new URL(env.FRONTEND_URL);
+    // FRONTEND_URL can be comma-separated for CORS; use first URL for redirect
+    const baseUrl = env.FRONTEND_URL.split(',')[0]?.trim() || env.FRONTEND_URL;
+    const redirectUrl = new URL(baseUrl);
     redirectUrl.pathname = '/feed';
     res.redirect(redirectUrl.toString());
   } catch {
     // Redirect to frontend with error
-    const redirectUrl = new URL(env.FRONTEND_URL);
+    const baseUrl = env.FRONTEND_URL.split(',')[0]?.trim() || env.FRONTEND_URL;
+    const redirectUrl = new URL(baseUrl);
     redirectUrl.pathname = '/login';
     redirectUrl.searchParams.set('error', 'oauth_failed');
     res.redirect(redirectUrl.toString());
