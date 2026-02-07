@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, API_URL } from './client';
 import type {
   RegisterInput,
   LoginInput,
@@ -138,8 +138,7 @@ export const authApi = {
 
   // Get Google OAuth URL
   getGoogleAuthUrl(): string {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-    return `${apiUrl}/auth/google/start`;
+    return `${API_URL}/auth/google/start`;
   },
 };
 

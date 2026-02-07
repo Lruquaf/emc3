@@ -224,9 +224,9 @@ export const googleCallback: RequestHandler = async (req, res) => {
 
     setAuthCookies(res, tokens);
 
-    // Redirect to frontend with success
+    // Redirect to frontend with success (both new and existing users go to feed)
     const redirectUrl = new URL(env.FRONTEND_URL);
-    redirectUrl.pathname = isNewUser ? '/welcome' : '/';
+    redirectUrl.pathname = '/feed';
     res.redirect(redirectUrl.toString());
   } catch {
     // Redirect to frontend with error

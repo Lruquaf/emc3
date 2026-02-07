@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════
+e=mc³ - Seed Kullanıcıları (Test Hesapları)
+═══════════════════════════════════════════════════════════════
+
+#  | Kullanıcı Adı | Email                      | Rol       | Şifre
+───┼───────────────┼────────────────────────────┼───────────┼──────────
+ 1 | admin         | admin@emc3.dev             | ADMIN     | Admin123!
+ 2 | moderator1    | moderator1@emc3.dev        | REVIEWER  | Mod123!
+ 3 | moderator2    | moderator2@emc3.dev        | REVIEWER  | Mod123!
+ 4 | ahmetyilmaz   | ahmet.yilmaz@emc3.dev      | USER      | User123!
+ 5 | fatmakaya     | fatma.kaya@emc3.dev        | USER      | User123!
+ 6 | mehmetdemir   | mehmet.demir@emc3.dev      | USER      | User123!
+ 7 | zeynepcelik   | zeynep.celik@emc3.dev      | USER      | User123!
+ 8 | aliozturk     | ali.ozturk@emc3.dev        | USER      | User123!
+ 9 | aysesahin     | ayse.sahin@emc3.dev        | USER      | User123!
+10 | mustafaarslan | mustafa.arslan@emc3.dev    | USER      | User123!
+11 | elifyildiz    | elif.yildiz@emc3.dev       | USER      | User123! (email doğrulanmamış)
+12 | banneduser    | banned.user@emc3.dev       | USER      | User123! (engellenmiş)
+
+───────────────────────────────────────────────────────────────
+Şifre grupları:
+  ADMIN     → Admin123!
+  REVIEWER  → Mod123!
+  USER      → User123!
+───────────────────────────────────────────────────────────────
