@@ -147,7 +147,11 @@ export const refresh: RequestHandler = async (req, res, next) => {
     const refreshToken = req.cookies.refresh_token;
 
     if (!refreshToken) {
-      throw AppError.unauthorized('No refresh token provided');
+      res.status(401).json({
+        code: 'UNAUTHENTICATED',
+        message: 'No refresh token provided',
+      });
+      return;
     }
 
     const tokens = await authService.refreshTokens(refreshToken);

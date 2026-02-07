@@ -103,7 +103,8 @@ class ApiClient {
     const isAuthEndpointNoRefresh =
       path === "/auth/login" ||
       path === "/auth/register" ||
-      path === "/auth/refresh";
+      path === "/auth/refresh" ||
+      path === "/auth/me"; // getMe 401 = no session, refresh would fail
     if (response.status === 401 && !isAuthEndpointNoRefresh) {
       try {
         await this.refreshToken();
