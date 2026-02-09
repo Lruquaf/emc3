@@ -227,17 +227,29 @@ export async function banUser(
     throw new ConflictError("User is already banned");
   }
 
-  // Cannot ban admin (unless you're also admin)
+  // Check actor roles
   const actor = await prisma.user.findUnique({
     where: { id: actorId },
     include: { roles: true },
   });
 
-  const targetIsAdmin = targetUser.roles.some((r) => r.role === "ADMIN");
-  const actorIsAdmin = actor?.roles.some((r) => r.role === "ADMIN");
+  if (!actor) {
+    throw new NotFoundError("Actor user not found");
+  }
 
-  if (targetIsAdmin && !actorIsAdmin) {
-    throw new ForbiddenError("Only admins can ban other admins");
+  const targetIsAdmin = targetUser.roles.some((r) => r.role === "ADMIN");
+  const targetIsReviewer = targetUser.roles.some((r) => r.role === "REVIEWER");
+  const actorIsAdmin = actor.roles.some((r) => r.role === "ADMIN");
+  const actorIsReviewer = actor.roles.some((r) => r.role === "REVIEWER");
+
+  // Admins cannot be banned under any circumstances
+  if (targetIsAdmin) {
+    throw new ForbiddenError("Admins cannot be banned");
+  }
+
+  // Only admins can ban reviewers (reviewers cannot ban other reviewers)
+  if (targetIsReviewer && !actorIsAdmin) {
+    throw new ForbiddenError("Only admins can ban reviewers");
   }
 
   const now = new Date();
@@ -287,7 +299,7 @@ export async function unbanUser(
 ): Promise<BanUserResponse> {
   const targetUser = await prisma.user.findUnique({
     where: { id: targetUserId },
-    include: { ban: true },
+    include: { ban: true, roles: true },
   });
 
   if (!targetUser) {
@@ -296,6 +308,31 @@ export async function unbanUser(
 
   if (!targetUser.ban?.isBanned) {
     throw new ConflictError("User is not banned");
+  }
+
+  // Check actor roles
+  const actor = await prisma.user.findUnique({
+    where: { id: actorId },
+    include: { roles: true },
+  });
+
+  if (!actor) {
+    throw new NotFoundError("Actor user not found");
+  }
+
+  const targetIsAdmin = targetUser.roles.some((r) => r.role === "ADMIN");
+  const targetIsReviewer = targetUser.roles.some((r) => r.role === "REVIEWER");
+  const actorIsAdmin = actor.roles.some((r) => r.role === "ADMIN");
+  const actorIsReviewer = actor.roles.some((r) => r.role === "REVIEWER");
+
+  // Admins cannot be unbanned (they shouldn't be banned in the first place)
+  if (targetIsAdmin) {
+    throw new ForbiddenError("Admins cannot be unbanned");
+  }
+
+  // Only admins can unban reviewers (reviewers cannot unban other reviewers)
+  if (targetIsReviewer && !actorIsAdmin) {
+    throw new ForbiddenError("Only admins can unban reviewers");
   }
 
   const now = new Date();

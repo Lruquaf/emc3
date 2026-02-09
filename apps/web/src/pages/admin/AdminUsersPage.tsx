@@ -12,7 +12,7 @@ import type { AdminUserDTO, RoleName } from '@emc3/shared';
 export function AdminUsersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const { hasRole } = useAuth();
+  const { hasRole, user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('query') || '');
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
   const [banModal, setBanModal] = useState<{ user: AdminUserDTO; reason: string } | null>(null);
@@ -352,22 +352,66 @@ export function AdminUsersPage() {
                           </button>
                         )
                       ) : user.isBanned ? (
-                        <button
-                          onClick={() => unbanMutation.mutate(user.id)}
-                          disabled={unbanMutation.isPending}
-                          className="p-2 text-success hover:bg-success/10 rounded-lg transition-colors"
-                          title="Banı Kaldır"
-                        >
-                          <UserCheck size={18} />
-                        </button>
+                        // Unban butonu - admin hiçbir şartta unban edilemez, moderatör sadece admin tarafından unban edilebilir
+                        (() => {
+                          const userIsAdmin = user.roles.includes('ADMIN');
+                          const userIsReviewer = user.roles.includes('REVIEWER');
+                          const currentUserIsAdmin = isAdmin;
+
+                          // Admin hiçbir şartta unban edilemez (zaten banlanmamalı)
+                          if (userIsAdmin) {
+                            return null;
+                          }
+
+                          // Moderatör sadece admin tarafından unban edilebilir
+                          if (userIsReviewer && !currentUserIsAdmin) {
+                            return null;
+                          }
+
+                          return (
+                            <button
+                              onClick={() => unbanMutation.mutate(user.id)}
+                              disabled={unbanMutation.isPending}
+                              className="p-2 text-success hover:bg-success/10 rounded-lg transition-colors"
+                              title="Banı Kaldır"
+                            >
+                              <UserCheck size={18} />
+                            </button>
+                          );
+                        })()
                       ) : (
-                        <button
-                          onClick={() => setBanModal({ user, reason: '' })}
-                          className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
-                          title="Banla"
-                        >
-                          <UserX size={18} />
-                        </button>
+                        // Ban butonu - kendi kendini banlayamaz, admin hiçbir şartta banlanamaz, moderatör sadece admin tarafından banlanabilir
+                        (() => {
+                          // Kendi kendini banlayamaz
+                          if (currentUser?.id === user.id) {
+                            return null;
+                          }
+
+                          const userIsAdmin = user.roles.includes('ADMIN');
+                          const userIsReviewer = user.roles.includes('REVIEWER');
+                          const currentUserIsAdmin = isAdmin;
+                          const currentUserIsReviewer = hasRole('REVIEWER') && !currentUserIsAdmin;
+
+                          // Admin hiçbir şartta banlanamaz
+                          if (userIsAdmin) {
+                            return null;
+                          }
+
+                          // Moderatör sadece admin tarafından banlanabilir
+                          if (userIsReviewer && !currentUserIsAdmin) {
+                            return null;
+                          }
+
+                          return (
+                            <button
+                              onClick={() => setBanModal({ user, reason: '' })}
+                              className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                              title="Banla"
+                            >
+                              <UserX size={18} />
+                            </button>
+                          );
+                        })()
                       )}
                     </div>
                   </td>
