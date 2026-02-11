@@ -1,12 +1,20 @@
 import dotenv from "dotenv";
 import { z } from "zod";
 
-// Load .env file
-dotenv.config();
+// Load .env file ONLY in development
+// In production/staging, Railway provides environment variables directly
+// Loading .env files in production can override Railway's DATABASE_URL
+if (process.env.NODE_ENV === "development" || !process.env.NODE_ENV) {
+  dotenv.config({ override: false });
+}
 
 const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url(),
+  // Connection pool ayarları (Railway için optimize edilmiş)
+  // Bu değerler DATABASE_URL'e query parametreleri olarak eklenebilir
+  DATABASE_CONNECTION_LIMIT: z.coerce.number().optional().default(10),
+  DATABASE_POOL_TIMEOUT: z.coerce.number().optional().default(20),
 
   // Auth
   JWT_SECRET: z.string().min(32),
@@ -56,4 +64,53 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = parsed.data;
+const env = parsed.data;
+
+// DATABASE_URL'e connection pool parametreleri ekle (eğer yoksa)
+let databaseUrl = env.DATABASE_URL;
+try {
+  const dbUrl = new URL(env.DATABASE_URL);
+  
+  // Connection pool parametrelerini ekle (eğer yoksa)
+  if (!dbUrl.searchParams.has("connection_limit")) {
+    dbUrl.searchParams.set("connection_limit", env.DATABASE_CONNECTION_LIMIT.toString());
+  }
+  if (!dbUrl.searchParams.has("pool_timeout")) {
+    dbUrl.searchParams.set("pool_timeout", env.DATABASE_POOL_TIMEOUT.toString());
+  }
+  // Railway için optimize edilmiş timeout ayarları
+  if (!dbUrl.searchParams.has("connect_timeout")) {
+    dbUrl.searchParams.set("connect_timeout", "10"); // 10 saniye connection timeout
+  }
+  
+  databaseUrl = dbUrl.toString();
+} catch (error) {
+  console.warn("⚠️  Could not parse DATABASE_URL, using original value");
+}
+
+// Debug: DATABASE_URL'i güvenli şekilde logla (production'da sadece host bilgisi)
+if (env.NODE_ENV !== "development") {
+  try {
+    const dbUrl = new URL(databaseUrl);
+    const maskedUrl = `${dbUrl.protocol}//${dbUrl.username}:****@${dbUrl.host}${dbUrl.pathname}${dbUrl.search}`;
+    console.log(`📊 Database URL: ${maskedUrl}`);
+    
+    // Railway internal network kontrolü
+    if (dbUrl.hostname === "postgres.railway.internal") {
+      console.log("ℹ️  Using Railway internal network (postgres.railway.internal)");
+      console.log("ℹ️  Make sure PostgreSQL service is connected to API service in Railway dashboard");
+    }
+  } catch (error) {
+    console.warn("⚠️  Could not parse DATABASE_URL for logging");
+  }
+}
+
+// DATABASE_URL'i güncellenmiş haliyle export et
+// env'i de güncellenmiş DATABASE_URL ile export et (geriye uyumluluk için)
+export const env = {
+  ...parsed.data,
+  DATABASE_URL: databaseUrl,
+};
+
+// envWithDatabaseUrl aynı şeyi export ediyor (prisma.ts için)
+export const envWithDatabaseUrl = env;

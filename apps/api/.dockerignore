@@ -1,0 +1,33 @@
+# Environment files - Railway provides these via environment variables
+.env
+.env.local
+.env.staging
+.env.production
+.env.*.local
+
+# Build outputs
+dist/
+build/
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.DS_Store
+Thumbs.db
