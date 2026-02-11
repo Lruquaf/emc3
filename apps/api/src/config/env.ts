@@ -64,19 +64,19 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-const env = parsed.data;
+const parsedEnv = parsed.data;
 
 // DATABASE_URL'e connection pool parametreleri ekle (eğer yoksa)
-let databaseUrl = env.DATABASE_URL;
+let databaseUrl = parsedEnv.DATABASE_URL;
 try {
-  const dbUrl = new URL(env.DATABASE_URL);
+  const dbUrl = new URL(parsedEnv.DATABASE_URL);
   
   // Connection pool parametrelerini ekle (eğer yoksa)
   if (!dbUrl.searchParams.has("connection_limit")) {
-    dbUrl.searchParams.set("connection_limit", env.DATABASE_CONNECTION_LIMIT.toString());
+    dbUrl.searchParams.set("connection_limit", parsedEnv.DATABASE_CONNECTION_LIMIT.toString());
   }
   if (!dbUrl.searchParams.has("pool_timeout")) {
-    dbUrl.searchParams.set("pool_timeout", env.DATABASE_POOL_TIMEOUT.toString());
+    dbUrl.searchParams.set("pool_timeout", parsedEnv.DATABASE_POOL_TIMEOUT.toString());
   }
   // Railway için optimize edilmiş timeout ayarları
   if (!dbUrl.searchParams.has("connect_timeout")) {
@@ -89,7 +89,7 @@ try {
 }
 
 // Debug: DATABASE_URL'i güvenli şekilde logla (production'da sadece host bilgisi)
-if (env.NODE_ENV !== "development") {
+if (parsedEnv.NODE_ENV !== "development") {
   try {
     const dbUrl = new URL(databaseUrl);
     const maskedUrl = `${dbUrl.protocol}//${dbUrl.username}:****@${dbUrl.host}${dbUrl.pathname}${dbUrl.search}`;
@@ -108,7 +108,7 @@ if (env.NODE_ENV !== "development") {
 // DATABASE_URL'i güncellenmiş haliyle export et
 // env'i de güncellenmiş DATABASE_URL ile export et (geriye uyumluluk için)
 export const env = {
-  ...parsed.data,
+  ...parsedEnv,
   DATABASE_URL: databaseUrl,
 };
 
