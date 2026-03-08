@@ -19,8 +19,14 @@
 
 ## İlk girişten sonra
 
-- `RUN_INITIAL_ADMIN_SCRIPT` → `false` yapın.
+- `RUN_BOOTSTRAP_ON_DEPLOY` veya `RUN_INITIAL_ADMIN_SCRIPT` → `false` yapın.
 - `INITIAL_ADMIN_PASSWORD` değişkenini **silin**.
+
+## Seed temizliği + ilk admin (tek akış)
+
+Staging'de seed verilerini silip sonra ilk admin oluşturmak için:
+- `RUN_BOOTSTRAP_ON_DEPLOY=true` kullanın (hem seed temizliği hem create-initial-admin çalışır).
+- `RUN_INITIAL_ADMIN_SCRIPT` yerine bunu kullanın; redeploy ile tek seferde tamamlanır.
 
 ## Google OAuth (opsiyonel)
 

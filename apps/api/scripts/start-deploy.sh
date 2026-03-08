@@ -32,7 +32,14 @@ if [ $RETRY -eq $MAX_RETRIES ]; then
   exit 1
 fi
 
-if [ "$RUN_INITIAL_ADMIN_SCRIPT" = "true" ]; then
+if [ "$RUN_BOOTSTRAP_ON_DEPLOY" = "true" ]; then
+  echo "🔄 Bootstrap: seed temizliği + ilk admin oluşturma..."
+  echo "   1/2 Seed verileri kaldırılıyor..."
+  pnpm exec tsx scripts/remove-seed-data.ts || true
+  echo "   2/2 İlk admin kontrolü (INITIAL_ADMIN_EMAIL + INITIAL_ADMIN_PASSWORD)..."
+  pnpm exec tsx scripts/create-initial-admin.ts || true
+  echo "✅ Bootstrap tamamlandı. İlk girişten sonra RUN_BOOTSTRAP_ON_DEPLOY=false yapın ve INITIAL_ADMIN_PASSWORD'ü kaldırın."
+elif [ "$RUN_INITIAL_ADMIN_SCRIPT" = "true" ]; then
   echo "👤 İlk admin kontrolü çalıştırılıyor (INITIAL_ADMIN_EMAIL + INITIAL_ADMIN_PASSWORD)..."
   pnpm exec tsx scripts/create-initial-admin.ts || true
   echo "💡 İlk girişten sonra RUN_INITIAL_ADMIN_SCRIPT=false yapın ve INITIAL_ADMIN_PASSWORD'ü kaldırın."

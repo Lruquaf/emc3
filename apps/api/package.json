@@ -24,7 +24,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "db:clean-unverified": "tsx scripts/clean-unverified-users.ts",
-    "create-initial-admin": "tsx scripts/create-initial-admin.ts"
+    "create-initial-admin": "tsx scripts/create-initial-admin.ts",
+    "remove-seed-data": "tsx scripts/remove-seed-data.ts"
   },
   "dependencies": {
     "@emc3/shared": "workspace:*",
