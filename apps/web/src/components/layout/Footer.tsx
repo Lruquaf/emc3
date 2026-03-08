@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Twitter, Instagram, Github, BookOpen } from 'lucide-react';
+import { Mail, Instagram, BookOpen } from 'lucide-react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -74,40 +74,23 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="mailto:iletisim@emc3.dev"
+                  href="mailto:mushafsolmaz@hotmail.com"
                   className="flex items-center gap-2 text-sm text-muted hover:text-accent transition-colors"
                 >
                   <Mail size={16} />
-                  iletisim@emc3.dev
+                  mushafsolmaz@hotmail.com
                 </a>
               </li>
-              <li className="flex items-center gap-3 pt-2">
+              <li className="pt-2">
                 <a
-                  href="#"
+                  href="https://www.instagram.com/mushafsolmaz?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-muted hover:text-accent transition-colors"
-                  aria-label="Twitter"
-                >
-                  <Twitter size={18} />
-                </a>
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted hover:text-accent transition-colors"
+                  className="inline-flex items-center gap-2 text-muted hover:text-accent transition-colors"
                   aria-label="Instagram"
                 >
                   <Instagram size={18} />
-                </a>
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted hover:text-accent transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Github size={18} />
+                  Instagram
                 </a>
               </li>
             </ul>

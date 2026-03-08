@@ -32,6 +32,12 @@ if [ $RETRY -eq $MAX_RETRIES ]; then
   exit 1
 fi
 
+if [ "$RUN_INITIAL_ADMIN_SCRIPT" = "true" ]; then
+  echo "👤 İlk admin kontrolü çalıştırılıyor (INITIAL_ADMIN_EMAIL + INITIAL_ADMIN_PASSWORD)..."
+  pnpm exec tsx scripts/create-initial-admin.ts || true
+  echo "💡 İlk girişten sonra RUN_INITIAL_ADMIN_SCRIPT=false yapın ve INITIAL_ADMIN_PASSWORD'ü kaldırın."
+fi
+
 if [ "$RUN_SEED_ON_DEPLOY" = "true" ]; then
   echo "🌱 RUN_SEED_ON_DEPLOY=true: seed çalıştırılıyor..."
   pnpm db:seed || true
