@@ -13,6 +13,8 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [emailNotVerifiedEmail, setEmailNotVerifiedEmail] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -30,6 +32,8 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginInput) => {
     setError(null);
+    setEmailNotVerifiedEmail(null);
+    setResendMessage(null);
     setIsLoading(true);
 
     try {
@@ -42,10 +46,25 @@ export function LoginPage() {
         navigate('/');
       }
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      setError(error.message || 'Giriş yapılamadı');
+      const apiErr = err as { message?: string; code?: string };
+      setError(apiErr.message || 'Giriş yapılamadı');
+      if (apiErr.code === 'EMAIL_NOT_VERIFIED') {
+        setEmailNotVerifiedEmail(data.email);
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!emailNotVerifiedEmail) return;
+    setResendMessage(null);
+    try {
+      await authApi.resendVerification(emailNotVerifiedEmail);
+      setResendMessage('Doğrulama e-postası tekrar gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin.');
+    } catch (err: unknown) {
+      const apiErr = err as { message?: string };
+      setResendMessage(apiErr.message || 'E-posta gönderilemedi.');
     }
   };
 
@@ -74,12 +93,28 @@ export function LoginPage() {
 
         {/* Error Messages */}
         {(error || oauthError) && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg space-y-2">
             <p className="text-sm text-danger">
               {oauthError === 'oauth_failed'
                 ? 'Google ile giriş yapılamadı. Lütfen tekrar deneyin.'
                 : error}
             </p>
+            {emailNotVerifiedEmail && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  className="text-sm text-accent hover:text-accent/80 font-medium underline"
+                >
+                  Doğrulama e-postasını tekrar gönder
+                </button>
+                {resendMessage && (
+                  <p className={`text-sm ${resendMessage.includes('gönderildi') ? 'text-green-600' : 'text-danger'}`}>
+                    {resendMessage}
+                  </p>
+                )}
+              </>
+            )}
           </div>
         )}
 

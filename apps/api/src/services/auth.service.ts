@@ -212,6 +212,12 @@ export class AuthService {
       throw AppError.unauthorized("Invalid email or password");
     }
 
+    if (!user.emailVerified) {
+      throw AppError.emailNotVerified(
+        "Giriş yapabilmek için e-posta adresinizi doğrulayın. Size gönderilen linke tıklayın veya doğrulama e-postasını tekrar gönderin."
+      );
+    }
+
     const tokens = this.generateUserTokens(user);
 
     return { user, tokens };

@@ -26,6 +26,10 @@ export class AppError extends Error {
     return new AppError(403, ERROR_CODES.FORBIDDEN, message, details);
   }
 
+  static emailNotVerified(message = 'Email adresinizi doğrulamanız gerekiyor') {
+    return new AppError(403, ERROR_CODES.EMAIL_NOT_VERIFIED, message);
+  }
+
   static contentRestricted(message = 'Content is restricted') {
     return new AppError(403, ERROR_CODES.CONTENT_RESTRICTED, message);
   }
