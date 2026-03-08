@@ -99,9 +99,17 @@ async function main() {
     console.log(`   Opinion: ${r3.count}`);
   }
 
+  // RevisionReview: seed revizyonlarındaki review'lar + seed kullanıcıların yaptığı tüm review'lar
+  const r4 = await prisma.revisionReview.deleteMany({
+    where: {
+      OR: [
+        { revisionId: { in: seedRevisionIds } },
+        { reviewerId: { in: seedUserIds } },
+      ],
+    },
+  });
+  console.log(`   RevisionReview: ${r4.count}`);
   if (seedRevisionIds.length > 0) {
-    const r4 = await prisma.revisionReview.deleteMany({ where: { revisionId: { in: seedRevisionIds } } });
-    console.log(`   RevisionReview: ${r4.count}`);
     const r5 = await prisma.revisionCategory.deleteMany({ where: { revisionId: { in: seedRevisionIds } } });
     console.log(`   RevisionCategory: ${r5.count}`);
   }
