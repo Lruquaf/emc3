@@ -1,4 +1,8 @@
+import { createRequire } from 'node:module';
 import { RequestHandler } from 'express';
+
+const require = createRequire(import.meta.url);
+const disposableDomains = require('disposable-email-domains') as string[];
 
 import { AuthService } from '../services/auth.service.js';
 import { setAuthCookies, clearAuthCookies } from '../lib/jwt.js';
@@ -15,6 +19,13 @@ const authService = new AuthService();
 export const register: RequestHandler = async (req, res, next) => {
   try {
     const { email, username, password } = req.body;
+
+    const domain = email?.split('@')[1]?.toLowerCase();
+    if (domain && disposableDomains.includes(domain)) {
+      throw AppError.badRequest('Geçici (disposable) e-posta adresleri kabul edilmemektedir.', {
+        field: 'email',
+      });
+    }
 
     const user = await authService.register({ email, username, password });
 
