@@ -15,6 +15,10 @@ export function Footer() {
               Epistemik Metayöntem Cemiyeti - İlmî içerik platformu. 
               Bilgiyi paylaşmak, öğrenmek ve geliştirmek için bir araya geldik.
             </p>
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              Bu platform, hiçbir kâr amacı gütmeden genç yazarlara fırsatlar vermek
+              ve insanların birbirinin bilgilerinden istifade etmesini sağlamak amacıyla kurulmuştur.
+            </p>
           </div>
 
           {/* Hızlı Linkler */}
