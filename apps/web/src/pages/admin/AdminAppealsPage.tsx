@@ -76,7 +76,9 @@ export function AdminAppealsPage() {
     } else {
       params.delete(key);
     }
-    params.set('page', '1');
+    if (key !== 'page') {
+      params.set('page', '1');
+    }
     setSearchParams(params);
   };
 
@@ -111,16 +113,37 @@ export function AdminAppealsPage() {
           ) : listData?.items.length === 0 ? (
             <div className="p-8 text-center text-muted">İtiraz bulunamadı</div>
           ) : (
-            <div className="divide-y divide-border">
-              {listData?.items.map((appeal) => (
-                <AppealListItem
-                  key={appeal.id}
-                  appeal={appeal}
-                  isSelected={selectedAppeal === appeal.id}
-                  onClick={() => setSelectedAppeal(appeal.id)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="divide-y divide-border">
+                {listData?.items.map((appeal) => (
+                  <AppealListItem
+                    key={appeal.id}
+                    appeal={appeal}
+                    isSelected={selectedAppeal === appeal.id}
+                    onClick={() => setSelectedAppeal(appeal.id)}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {listData && listData.meta.totalPages > 1 && (
+                <div className="p-3 border-t border-border flex justify-center gap-2">
+                  {Array.from({ length: listData.meta.totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => handleFilterChange('page', String(p))}
+                      className={`px-3 py-1 rounded text-sm ${
+                        p === page
+                          ? 'bg-accent text-white'
+                          : 'bg-bg text-muted hover:bg-border'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 

@@ -28,11 +28,14 @@ export function AdminUsersPage() {
   const bannedFilter = searchParams.get('isBanned');
   const deletedFilter = searchParams.get('isDeleted');
 
-  // Update URL when debounced search query changes
+  // Update URL when debounced search query changes (only when query actually changed, preserve page)
   useEffect(() => {
+    const trimmedQuery = debouncedSearchQuery.trim();
+    const currentQuery = searchParams.get('query') || '';
+    if (trimmedQuery === currentQuery) return;
+
     setSearchParams((prevParams) => {
       const params = new URLSearchParams(prevParams);
-      const trimmedQuery = debouncedSearchQuery.trim();
       if (trimmedQuery) {
         params.set('query', trimmedQuery);
       } else {
@@ -41,7 +44,7 @@ export function AdminUsersPage() {
       params.set('page', '1');
       return params;
     }, { replace: true });
-  }, [debouncedSearchQuery, setSearchParams]);
+  }, [debouncedSearchQuery, searchParams, setSearchParams]);
 
   const queryFromUrl = searchParams.get('query') || '';
 
@@ -160,7 +163,9 @@ export function AdminUsersPage() {
     } else {
       params.delete(key);
     }
-    params.set('page', '1');
+    if (key !== 'page') {
+      params.set('page', '1');
+    }
     setSearchParams(params);
   };
 

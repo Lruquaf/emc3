@@ -16,11 +16,14 @@ export function AdminArticlesPage() {
   const debouncedSearchInput = useDebounce(searchInput, 500);
   const [removeModal, setRemoveModal] = useState<{ article: AdminArticleDTO; reason: string } | null>(null);
 
-  // Update URL when debounced search input changes
+  // Update URL when debounced search input changes (only when query actually changed, preserve page)
   useEffect(() => {
+    const trimmedInput = debouncedSearchInput.trim();
+    const currentQuery = searchParams.get('query') || '';
+    if (trimmedInput === currentQuery) return;
+
     setSearchParams((prevParams) => {
       const params = new URLSearchParams(prevParams);
-      const trimmedInput = debouncedSearchInput.trim();
       if (trimmedInput) {
         params.set('query', trimmedInput);
       } else {
@@ -29,7 +32,7 @@ export function AdminArticlesPage() {
       params.set('page', '1');
       return params;
     }, { replace: true });
-  }, [debouncedSearchInput, setSearchParams]);
+  }, [debouncedSearchInput, searchParams, setSearchParams]);
 
   const page = parseInt(searchParams.get('page') || '1');
   const statusFilter = searchParams.get('status') as 'PUBLISHED' | 'REMOVED' | undefined;
@@ -74,7 +77,9 @@ export function AdminArticlesPage() {
     } else {
       params.delete(key);
     }
-    params.set('page', '1');
+    if (key !== 'page') {
+      params.set('page', '1');
+    }
     setSearchParams(params);
   };
 

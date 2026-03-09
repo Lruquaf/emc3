@@ -25,11 +25,14 @@ export function FeedPage() {
   // Only show tabs when there's a search query
   const showTabs = !!query;
 
-  // Update URL when debounced search input changes
+  // Update URL when debounced search input changes (only when query actually changed)
   useEffect(() => {
+    const trimmedInput = debouncedSearchInput.trim();
+    const currentQuery = searchParams.get('query') || '';
+    if (trimmedInput === currentQuery) return;
+
     setSearchParams((prevParams) => {
       const params = new URLSearchParams(prevParams);
-      const trimmedInput = debouncedSearchInput.trim();
       if (trimmedInput) {
         params.set('query', trimmedInput);
       } else {
@@ -37,7 +40,7 @@ export function FeedPage() {
       }
       return params;
     }, { replace: true });
-  }, [debouncedSearchInput, setSearchParams]);
+  }, [debouncedSearchInput, searchParams, setSearchParams]);
 
   // Articles feed (only when tab is articles or no search)
   const {
