@@ -10,6 +10,7 @@ import { FeedCard } from '../components/social/FeedCard';
 import { UserCard } from '../components/social/UserCard';
 import { ProfileEditModal } from '../components/profile/ProfileEditModal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { SafeLink } from '../components/ui/SafeLink';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
 
@@ -154,16 +155,14 @@ export function ProfilePage() {
               {Object.entries(profile.profile.socialLinks as Record<string, string>).map(
                 ([platform, url]) =>
                   url && (
-                    <a
+                    <SafeLink
                       key={platform}
                       href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
                     >
                       <ExternalLink size={14} />
                       <span className="capitalize">{platform === 'x' ? 'X' : platform}</span>
-                    </a>
+                    </SafeLink>
                   )
               )}
             </div>

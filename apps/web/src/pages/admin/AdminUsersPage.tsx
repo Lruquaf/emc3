@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { Search, UserX, UserCheck, Shield, ShieldOff, X, RotateCcw, Copy, Check } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Search, UserX, UserCheck, Shield, ShieldOff, X, RotateCcw, Copy, Check, ExternalLink } from 'lucide-react';
 
 import { adminUsersApi } from '../../api/admin.api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -344,6 +344,15 @@ export function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Link
+                        to={`/user/${user.username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
+                        title="Profili yeni sekmede aç"
+                      >
+                        <ExternalLink size={18} />
+                      </Link>
                       {user.isDeleted ? (
                         isAdmin && (
                           <button

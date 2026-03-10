@@ -41,11 +41,25 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
     setMessage(null);
     setIsSubmitting(true);
     try {
+      // Sosyal linkleri göndermeden önce normalize et:
+      // - Boş stringleri at
+      // - Şema ve backend ile uyumlu olacak şekilde, http:// vb. eksikse https:// ekle
+      const cleanedSocialLinks: Record<string, string> = {};
+      for (const [key, value] of Object.entries(socialLinks)) {
+        const trimmed = value?.trim();
+        if (!trimmed) continue;
+        let url = trimmed;
+        if (!/^https?:\/\//i.test(url)) {
+          url = `https://${url}`;
+        }
+        cleanedSocialLinks[key] = url;
+      }
+
       await authApi.updateProfile({
         displayName: displayName.trim() || null,
         about: about.trim() || null,
         avatarUrl: avatarUrl || null,
-        socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : null,
+        socialLinks: Object.keys(cleanedSocialLinks).length > 0 ? cleanedSocialLinks : null,
       });
       // Update user state with the response from API immediately
       await refreshUser();

@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
+import { SafeLink } from '../ui/SafeLink';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -22,16 +23,23 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}
         components={{
-          // External links open in new tab
+          // External links: SafeLink ile onay modali üzerinden açılır
           a: ({ href, children, ...props }) => {
             const isExternal = href?.startsWith('http');
+            if (isExternal && href) {
+              return (
+                <SafeLink
+                  href={href}
+                  className="text-emerald-600 hover:text-emerald-700"
+                  {...props}
+                >
+                  {children}
+                </SafeLink>
+              );
+            }
             return (
               <a
                 href={href}
-                {...(isExternal && {
-                  target: '_blank',
-                  rel: 'noopener noreferrer',
-                })}
                 className="text-emerald-600 hover:text-emerald-700"
                 {...props}
               >

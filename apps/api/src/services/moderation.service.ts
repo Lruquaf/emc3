@@ -157,7 +157,11 @@ export async function listUsers(
         _count: {
           select: {
             articles: true,
-            opinions: true,
+            opinions: {
+              where: {
+                removedAt: null,
+              },
+            },
           },
         },
       },
@@ -189,7 +193,11 @@ export async function getUserDetail(userId: string): Promise<AdminUserDTO> {
       _count: {
         select: {
           articles: true,
-          opinions: true,
+          opinions: {
+            where: {
+              removedAt: null,
+            },
+          },
         },
       },
     },
@@ -590,7 +598,11 @@ export async function listArticles(
             likes: true,
             saves: true,
             views: true,
-            opinions: true,
+            opinions: {
+              where: {
+                removedAt: null,
+              },
+            },
           },
         },
       },

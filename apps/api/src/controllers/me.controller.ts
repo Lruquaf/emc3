@@ -107,6 +107,16 @@ export async function updateProfile(
     if (body.displayName !== undefined) data.displayName = body.displayName;
     if (body.about !== undefined) data.about = body.about;
     if (body.avatarUrl !== undefined) {
+      // Avatar yalnızca sistemin yüklediği Cloudinary görselleri olmalı
+      if (
+        body.avatarUrl &&
+        typeof body.avatarUrl === "string" &&
+        !body.avatarUrl.includes("res.cloudinary.com")
+      ) {
+        throw AppError.badRequest("Avatar sadece sistemin yüklediği görsellerden seçilebilir", {
+          field: "avatarUrl",
+        });
+      }
       data.avatarUrl = body.avatarUrl;
 
       // Delete old avatar from Cloudinary if it exists and is different
@@ -126,12 +136,64 @@ export async function updateProfile(
       }
     }
     if (body.socialLinks !== undefined) {
-      // Filter out empty strings and keep only valid URLs
+      // Filter out empty strings and keep only valid HTTPS URLs
       const cleanedLinks: Record<string, string> = {};
       if (body.socialLinks) {
         for (const [key, value] of Object.entries(body.socialLinks)) {
-          if (value && value.trim() !== "") {
-            cleanedLinks[key] = value.trim();
+          const trimmed = value?.trim();
+          if (!trimmed) continue;
+
+          try {
+            const url = new URL(trimmed);
+            // Yalnızca HTTPS bağlantılarına izin ver
+            if (url.protocol !== "https:") {
+              continue;
+            }
+            const hostname = url.hostname.toLowerCase();
+            const platform = key.toLowerCase();
+
+            // Platforma özel host kısıtları
+            if (
+              (platform === "x" || platform === "twitter") &&
+              !(
+                hostname === "x.com" ||
+                hostname.endsWith(".x.com") ||
+                hostname === "twitter.com" ||
+                hostname.endsWith(".twitter.com")
+              )
+            ) {
+              continue;
+            }
+
+            if (
+              platform === "instagram" &&
+              !(hostname === "instagram.com" || hostname.endsWith(".instagram.com"))
+            ) {
+              continue;
+            }
+
+            if (
+              platform === "linkedin" &&
+              !(hostname === "linkedin.com" || hostname.endsWith(".linkedin.com"))
+            ) {
+              continue;
+            }
+
+            if (
+              platform === "youtube" &&
+              !(
+                hostname === "youtube.com" ||
+                hostname.endsWith(".youtube.com") ||
+                hostname === "youtu.be"
+              )
+            ) {
+              continue;
+            }
+
+            cleanedLinks[key] = url.toString();
+          } catch {
+            // Geçersiz URL'leri sessizce atla
+            continue;
           }
         }
       }
