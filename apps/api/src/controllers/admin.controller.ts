@@ -11,6 +11,7 @@ import type {
   FeedbackInput,
   AdminUserListQuery,
   AdminArticleListQuery,
+  AdminOpinionListQuery,
   BanUserInput,
   UpdateRoleInput,
   RemoveArticleInput,
@@ -227,6 +228,28 @@ export async function restoreArticle(
 
     await moderationService.restoreArticle(articleId, actorId);
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Opinion List (Admin)
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * GET /admin/opinions
+ * List opinions
+ */
+export async function listOpinions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const query = req.query as unknown as AdminOpinionListQuery;
+    const result = await moderationService.listOpinions(query);
+    res.json(result);
   } catch (error) {
     next(error);
   }

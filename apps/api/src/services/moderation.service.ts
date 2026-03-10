@@ -11,6 +11,9 @@ import {
   type AdminArticleDTO,
   type AdminArticleListResponse,
   type AdminArticleListQuery,
+  type AdminOpinionDTO,
+  type AdminOpinionListResponse,
+  type AdminOpinionListParams,
   type BanUserResponse,
   type UpdateRoleResponse,
   type RoleName,
@@ -624,6 +627,81 @@ export async function listArticles(
   };
 }
 
+// ═══════════════════════════════════════════════════════════
+// OPINION MODERATION
+// ═══════════════════════════════════════════════════════════
+
+export async function listOpinions(
+  params: AdminOpinionListParams,
+): Promise<AdminOpinionListResponse> {
+  const {
+    status,
+    // TODO: future: text query on body/article/author
+    articleId,
+    authorId,
+    page = 1,
+    limit = 20,
+  } = params;
+
+  const take = Math.min(limit, 100);
+  const skip = (page - 1) * take;
+
+  const where: Prisma.OpinionWhereInput = {};
+
+  if (status === "ACTIVE") {
+    where.removedAt = null;
+  } else if (status === "REMOVED") {
+    where.removedAt = { not: null };
+  }
+
+  if (articleId) {
+    where.articleId = articleId;
+  }
+
+  if (authorId) {
+    where.authorId = authorId;
+  }
+
+  const [opinions, total] = await Promise.all([
+    prisma.opinion.findMany({
+      where,
+      include: {
+        article: {
+          include: {
+            author: {
+              include: {
+                profile: true,
+                ban: true,
+              },
+            },
+          },
+        },
+        author: {
+          include: {
+            profile: true,
+            ban: true,
+          },
+        },
+        reply: true,
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+    }),
+    prisma.opinion.count({ where }),
+  ]);
+
+  return {
+    items: opinions.map(mapToAdminOpinionDTO),
+    meta: {
+      total,
+      page,
+      limit: take,
+      totalPages: Math.ceil(total / take),
+    },
+  };
+}
+
 export async function removeArticle(
   articleId: string,
   actorId: string,
@@ -870,5 +948,33 @@ function mapToAdminArticleDTO(article: any): AdminArticleDTO {
     },
     createdAt: article.createdAt?.toISOString() ?? new Date().toISOString(),
     updatedAt: article.updatedAt?.toISOString() ?? new Date().toISOString(),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapToAdminOpinionDTO(opinion: any): AdminOpinionDTO {
+  const status = opinion.removedAt ? "REMOVED" : "ACTIVE";
+  const body: string = opinion.bodyMarkdown ?? "";
+  const bodyPreview =
+    body.length > 200 ? `${body.slice(0, 197)}...` : body;
+
+  return {
+    id: opinion.id,
+    articleId: opinion.articleId,
+    articleTitle: opinion.article.title,
+    articleStatus: opinion.article.status,
+    author: {
+      id: opinion.author.id,
+      username: opinion.author.username,
+      displayName: opinion.author.profile?.displayName ?? null,
+      isBanned: opinion.author.ban?.isBanned ?? false,
+      isDeleted: opinion.author.isDeleted ?? false,
+    },
+    bodyPreview,
+    likeCount: opinion.likeCount,
+    hasReply: !!opinion.reply && !opinion.reply.removedAt,
+    status,
+    createdAt: opinion.createdAt.toISOString(),
+    removedAt: opinion.removedAt ? opinion.removedAt.toISOString() : null,
   };
 }

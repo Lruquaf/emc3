@@ -30,6 +30,7 @@ import {
   AdminArticlesPage,
   AdminAuditPage,
   AdminAppealsPage,
+  AdminOpinionsPage,
 } from './pages/admin';
 import { FeedPage } from './pages/FeedPage';
 import { FollowingFeedPage } from './pages/FollowingFeedPage';
@@ -53,6 +54,7 @@ function App() {
               <Route path="/admin/revisions/:id" element={<AdminRevisionDetailPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/articles" element={<AdminArticlesPage />} />
+              <Route path="/admin/opinions" element={<AdminOpinionsPage />} />
               <Route path="/admin/audit" element={<AdminAuditPage />} />
               <Route path="/admin/appeals" element={<AdminAppealsPage />} />
             </Route>

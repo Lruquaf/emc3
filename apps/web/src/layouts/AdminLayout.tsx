@@ -18,6 +18,7 @@ const adminNavItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true, adminOnly: true },
   { to: '/admin/users', icon: Users, label: 'Kullanıcılar' },
   { to: '/admin/articles', icon: FileText, label: 'Makaleler' },
+  { to: '/admin/opinions', icon: MessageSquare, label: 'Mütalaalar' },
   { to: '/admin/reviews', icon: FileSearch, label: 'İnceleme Kuyruğu' },
   { to: '/admin/publish-queue', icon: CheckSquare, label: 'Yayın Kuyruğu', adminOnly: true },
   { to: '/admin/categories', icon: FolderTree, label: 'Kategoriler', adminOnly: true },

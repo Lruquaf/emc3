@@ -110,6 +110,20 @@ export const adminArticleListQuerySchema = z.object({
 export type AdminArticleListQuery = z.infer<typeof adminArticleListQuerySchema>;
 
 // ═══════════════════════════════════════════════════════════
+// Opinion Moderation Schemas
+// ═══════════════════════════════════════════════════════════
+
+export const adminOpinionListQuerySchema = z.object({
+  status: z.enum(['ACTIVE', 'REMOVED']).optional(),
+  articleId: z.string().uuid().optional(),
+  authorId: z.string().uuid().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export type AdminOpinionListQuery = z.infer<typeof adminOpinionListQuerySchema>;
+
+// ═══════════════════════════════════════════════════════════
 // Audit Log Schemas
 // ═══════════════════════════════════════════════════════════
 

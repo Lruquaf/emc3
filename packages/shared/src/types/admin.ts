@@ -152,6 +152,48 @@ export interface AdminArticleListParams {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Opinion Moderation DTOs
+// ═══════════════════════════════════════════════════════════
+
+export interface AdminOpinionDTO {
+  id: string;
+  articleId: string;
+  articleTitle: string;
+  articleStatus: "PUBLISHED" | "REMOVED";
+  author: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    isBanned: boolean;
+    isDeleted: boolean;
+  };
+  bodyPreview: string;
+  likeCount: number;
+  hasReply: boolean;
+  status: "ACTIVE" | "REMOVED";
+  createdAt: string;
+  removedAt: string | null;
+}
+
+export interface AdminOpinionListResponse {
+  items: AdminOpinionDTO[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminOpinionListParams {
+  status?: "ACTIVE" | "REMOVED";
+  articleId?: string;
+  authorId?: string;
+  page?: number;
+  limit?: number;
+}
+
+// ═══════════════════════════════════════════════════════════
 // Dashboard Stats
 // ═══════════════════════════════════════════════════════════
 

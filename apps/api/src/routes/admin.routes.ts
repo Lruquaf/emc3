@@ -16,6 +16,7 @@ import {
   categoryIdParamSchema,
   adminUserListQuerySchema,
   adminArticleListQuerySchema,
+  adminOpinionListQuerySchema,
   banUserSchema,
   updateRoleSchema,
   restoreUserSchema,
@@ -237,6 +238,13 @@ adminRouter.delete(
 );
 
 // Opinion Moderation (REVIEWER or ADMIN)
+adminRouter.get(
+  '/opinions',
+  requireReviewer,
+  validateQuery(adminOpinionListQuerySchema),
+  adminController.listOpinions
+);
+
 adminRouter.post(
   '/opinions/:id/remove',
   requireReviewer,

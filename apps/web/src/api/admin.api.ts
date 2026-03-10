@@ -9,6 +9,7 @@ import type {
   AdminUserListResponse,
   AdminUserDTO,
   AdminArticleListResponse,
+  AdminOpinionListResponse,
   BanUserResponse,
   UpdateRoleResponse,
   AuditLogListResponse,
@@ -329,6 +330,29 @@ export const adminAppealsApi = {
 // ═══════════════════════════════════════════════════════════
 
 export const adminOpinionsApi = {
+  /**
+   * List opinions
+   */
+  list: async (params?: {
+    status?: 'ACTIVE' | 'REMOVED';
+    articleId?: string;
+    authorId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<AdminOpinionListResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.articleId) searchParams.set('articleId', params.articleId);
+    if (params?.authorId) searchParams.set('authorId', params.authorId);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+
+    const queryString = searchParams.toString();
+    const path = `/admin/opinions${queryString ? `?${queryString}` : ''}`;
+
+    return apiClient.get<AdminOpinionListResponse>(path);
+  },
+
   /**
    * Remove opinion
    */
