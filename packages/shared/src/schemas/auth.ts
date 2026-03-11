@@ -79,7 +79,8 @@ export const resetPasswordSchema = z.object({
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 /**
- * Update profile schema (displayName, about, avatarUrl)
+ * Update profile schema (displayName, about, socialLinks)
+ * Avatar is managed via POST /me/avatar and DELETE /me/avatar.
  */
 export const updateProfileSchema = z.object({
   displayName: z
@@ -92,25 +93,6 @@ export const updateProfileSchema = z.object({
     .max(500, 'Hakkında en fazla 500 karakter olabilir')
     .optional()
     .nullable(),
-  avatarUrl: z.preprocess(
-    (v) => (v === '' ? null : v),
-    z
-      .union([
-        z
-          .string()
-          .url('Geçerli bir URL giriniz')
-          .max(2000)
-          // Kullanıcı tarafından ayarlanan avatarlar sadece sistemin yüklediği
-          // Cloudinary URL'leri olmalı. OAuth ile gelen harici avatarlar doğrudan
-          // veritabanına yazılıyor ve bu şemadan geçmiyor.
-          .refine(
-            (url) => url.includes('res.cloudinary.com'),
-            'Avatar sadece sistemin yüklediği görsellerden seçilebilir'
-          ),
-        z.null(),
-      ])
-      .optional()
-  ),
   socialLinks: z
     .record(
       z

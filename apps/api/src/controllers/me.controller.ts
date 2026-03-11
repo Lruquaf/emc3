@@ -51,29 +51,96 @@ export async function getMyRevisions(
 // ═══════════════════════════════════════════════════════════
 
 /**
- * GET /api/v1/me/avatar/upload-signature
- * Get Cloudinary upload signature for client-side direct upload
+ * POST /api/v1/me/avatar
+ * Upload avatar image through the server – file goes to Cloudinary server-side.
  */
-export async function getAvatarUploadSignature(
+export async function uploadAvatar(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
     if (!cloudinaryService.isCloudinaryConfigured()) {
-      throw AppError.badRequest("Avatar upload is not configured");
+      throw AppError.badRequest("Avatar yükleme yapılandırılmamış");
     }
 
     const userId = req.user!.id;
-    const signature = cloudinaryService.generateUploadSignature(userId);
+    const file = (req as Request & { file?: Express.Multer.File }).file;
 
-    res.json({
-      signature: signature.signature,
-      timestamp: signature.timestamp,
-      folder: signature.folder,
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-      apiKey: process.env.CLOUDINARY_API_KEY,
+    if (!file) {
+      throw AppError.badRequest("Resim dosyası gereklidir", { field: "avatar" });
+    }
+
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowed.includes(file.mimetype)) {
+      throw AppError.badRequest(
+        "Sadece JPG, PNG veya WebP formatında resim yükleyebilirsiniz.",
+        { field: "avatar" },
+      );
+    }
+
+    const currentProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { avatarUrl: true },
     });
+
+    const newAvatarUrl = await cloudinaryService.uploadAvatar(userId, file.buffer);
+
+    await prisma.userProfile.upsert({
+      where: { userId },
+      create: { userId, avatarUrl: newAvatarUrl },
+      update: { avatarUrl: newAvatarUrl },
+    });
+
+    // Best-effort deletion of old avatar
+    if (currentProfile?.avatarUrl?.includes("cloudinary.com")) {
+      const oldPublicId = cloudinaryService.extractPublicId(currentProfile.avatarUrl);
+      if (oldPublicId) {
+        cloudinaryService.deleteImage(oldPublicId).catch((err) => {
+          console.error("Failed to delete old avatar:", err);
+        });
+      }
+    }
+
+    res.json({ avatarUrl: newAvatarUrl });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * DELETE /api/v1/me/avatar
+ * Remove avatar: deletes the image from Cloudinary and clears the profile field.
+ */
+export async function deleteAvatar(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user!.id;
+
+    const currentProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { avatarUrl: true },
+    });
+
+    if (currentProfile?.avatarUrl?.includes("cloudinary.com")) {
+      const publicId = cloudinaryService.extractPublicId(currentProfile.avatarUrl);
+      if (publicId) {
+        cloudinaryService.deleteImage(publicId).catch((err) => {
+          console.error("Failed to delete avatar from Cloudinary:", err);
+        });
+      }
+    }
+
+    await prisma.userProfile.upsert({
+      where: { userId },
+      create: { userId, avatarUrl: null },
+      update: { avatarUrl: null },
+    });
+
+    res.json({ message: "Avatar kaldırıldı" });
   } catch (error) {
     next(error);
   }
@@ -81,7 +148,8 @@ export async function getAvatarUploadSignature(
 
 /**
  * PATCH /api/v1/me/profile
- * Update current user's profile (displayName, about, avatarUrl)
+ * Update current user's profile (displayName, about, socialLinks).
+ * Avatar is managed exclusively via POST /me/avatar and DELETE /me/avatar.
  */
 export async function updateProfile(
   req: Request,
@@ -92,49 +160,13 @@ export async function updateProfile(
     const userId = req.user!.id;
     const body = req.body as UpdateProfileInput;
 
-    // Get current profile to check for old avatar
-    const currentProfile = await prisma.userProfile.findUnique({
-      where: { userId },
-      select: { avatarUrl: true },
-    });
-
     const data: {
       displayName?: string | null;
       about?: string | null;
-      avatarUrl?: string | null;
       socialLinks?: Record<string, string> | null;
     } = {};
     if (body.displayName !== undefined) data.displayName = body.displayName;
     if (body.about !== undefined) data.about = body.about;
-    if (body.avatarUrl !== undefined) {
-      // Avatar yalnızca sistemin yüklediği Cloudinary görselleri olmalı
-      if (
-        body.avatarUrl &&
-        typeof body.avatarUrl === "string" &&
-        !body.avatarUrl.includes("res.cloudinary.com")
-      ) {
-        throw AppError.badRequest("Avatar sadece sistemin yüklediği görsellerden seçilebilir", {
-          field: "avatarUrl",
-        });
-      }
-      data.avatarUrl = body.avatarUrl;
-
-      // Delete old avatar from Cloudinary if it exists and is different
-      if (
-        currentProfile?.avatarUrl &&
-        currentProfile.avatarUrl !== body.avatarUrl &&
-        currentProfile.avatarUrl.includes("cloudinary.com")
-      ) {
-        const oldPublicId = cloudinaryService.extractPublicId(
-          currentProfile.avatarUrl,
-        );
-        if (oldPublicId) {
-          cloudinaryService.deleteImage(oldPublicId).catch((err) => {
-            console.error("Failed to delete old avatar:", err);
-          });
-        }
-      }
-    }
     if (body.socialLinks !== undefined) {
       // Filter out empty strings and keep only valid HTTPS URLs
       const cleanedLinks: Record<string, string> = {};
@@ -207,7 +239,6 @@ export async function updateProfile(
         userId,
         displayName: data.displayName ?? null,
         about: data.about ?? null,
-        avatarUrl: data.avatarUrl ?? null,
         socialLinks: data.socialLinks ?? {},
       },
       update: {

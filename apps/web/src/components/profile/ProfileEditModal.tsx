@@ -58,7 +58,6 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
       await authApi.updateProfile({
         displayName: displayName.trim() || null,
         about: about.trim() || null,
-        avatarUrl: avatarUrl || null,
         socialLinks: Object.keys(cleanedSocialLinks).length > 0 ? cleanedSocialLinks : null,
       });
       // Update user state with the response from API immediately

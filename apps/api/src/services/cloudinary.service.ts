@@ -1,3 +1,5 @@
+import { Readable } from "stream";
+
 import { v2 as cloudinary } from "cloudinary";
 import { env } from "../config/env.js";
 
@@ -34,41 +36,44 @@ export function isCloudinaryConfigured(): boolean {
 }
 
 /**
- * Generate upload signature for client-side direct upload
- * This allows secure uploads without exposing API secret
+ * Upload avatar image to Cloudinary from a server-side buffer.
+ * Applies a face-aware 400×400 crop transformation and returns the final URL.
  */
-export function generateUploadSignature(userId: string): {
-  signature: string;
-  timestamp: number;
-  folder: string;
-} {
+export async function uploadAvatar(
+  userId: string,
+  fileBuffer: Buffer,
+): Promise<string> {
   if (!isCloudinaryConfigured()) {
     throw new Error("Cloudinary is not configured");
   }
 
-  const timestamp = Math.round(new Date().getTime() / 1000);
   const folder = `avatars/${userId}`;
 
-  // Cloudinary signature requires ONLY parameters that are validated in signature
-  // max_file_size is NOT included in signature validation (it's checked during upload)
-  // Only include: allowed_formats, folder, timestamp
-  const params: Record<string, string> = {
-    allowed_formats: "jpg,jpeg,png,webp",
-    folder: folder,
-    timestamp: timestamp.toString(),
-  };
+  const secureUrl = await new Promise<string>((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        if (!result) return reject(new Error("Cloudinary upload failed: no result"));
+        resolve(result.secure_url);
+      },
+    );
 
-  // Generate signature - Cloudinary will sort parameters alphabetically internally
-  const signature = cloudinary.utils.api_sign_request(
-    params,
-    env.CLOUDINARY_API_SECRET!,
+    const readable = new Readable();
+    readable.push(fileBuffer);
+    readable.push(null);
+    readable.pipe(uploadStream);
+  });
+
+  // Insert face-aware crop transformation into the URL
+  return secureUrl.replace(
+    "/upload/",
+    "/upload/w_400,h_400,c_fill,g_face,q_auto,f_auto/",
   );
-
-  return {
-    signature,
-    timestamp,
-    folder,
-  };
 }
 
 /**

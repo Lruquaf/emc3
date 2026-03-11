@@ -444,7 +444,8 @@ export class AuthService {
             profile: {
               create: {
                 displayName: googleProfile.name || username,
-                avatarUrl: googleProfile.picture,
+                // Avatar harici bir kaynaktan gelmesin; kullanıcı
+                // dilerse profil ayarlarından kendi avatarını yükler.
               },
             },
             oauthAccounts: {

@@ -86,22 +86,38 @@ export const authApi = {
     return apiClient.get<UserResponse>('/auth/me');
   },
 
-  // Get avatar upload signature
-  async getAvatarUploadSignature(): Promise<{
-    signature: string;
-    timestamp: number;
-    folder: string;
-    cloudName: string;
-    apiKey: string;
-  }> {
-    return apiClient.get('/me/avatar/upload-signature');
+  // Upload avatar image via server (multipart/form-data)
+  async uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await fetch(`${API_URL}/me/avatar`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({
+        code: 'UPLOAD_ERROR',
+        message: 'Avatar yüklenemedi',
+      }));
+      throw data;
+    }
+
+    return response.json();
   },
 
-  // Update profile (displayName, about, avatarUrl, socialLinks)
+  // Delete avatar (removes from Cloudinary and clears profile)
+  async deleteAvatar(): Promise<{ message: string }> {
+    return apiClient.delete<{ message: string }>('/me/avatar');
+  },
+
+  // Update profile (displayName, about, socialLinks)
+  // Avatar is managed exclusively via uploadAvatar() and deleteAvatar().
   async updateProfile(data: {
     displayName?: string | null;
     about?: string | null;
-    avatarUrl?: string | null;
     socialLinks?: Record<string, string> | null;
   }): Promise<{ user: UserResponse }> {
     return apiClient.patch<{ user: UserResponse }>('/me/profile', data);
